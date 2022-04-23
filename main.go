@@ -47,7 +47,7 @@ func main() {
 						return err
 					}
 
-					fmt.Println("Caches Updated In:", time.Since(start))
+					fmt.Println("\ncaches updated in:", time.Since(start))
 					return nil
 				},
 			},

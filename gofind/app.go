@@ -1,6 +1,7 @@
 package gofind
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,7 +22,16 @@ type GoFind struct {
 	Conf    Config
 }
 
-func (a *GoFind) CacheAll() error {
+func (gf *GoFind) CacheAll() error {
+	cache := NewCache(gf.Conf.CacheDir)
+
+	for key, entry := range gf.Conf.Commands {
+		matches := gf.SearchFor(entry)
+		cache.Set(key, matches)
+
+		fmt.Printf("Cached %v results for %s\n", len(matches), key)
+	}
+
 	return nil
 }
 
