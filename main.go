@@ -18,6 +18,7 @@ func main() {
 	}
 
 	app := &cli.App{
+		Version:   "0.0.2",
 		Name:      "gofind",
 		Usage:     "an interactive search for directories using the filepath.Match function",
 		UsageText: "gofind [config-entry string] e.g. `gofind repos`",
