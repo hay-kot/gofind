@@ -11,7 +11,11 @@ import (
 )
 
 func main() {
-	finder := gofind.App{}
+	cfg := gofind.ReadDefaultConfig()
+
+	finder := gofind.GoFind{
+		Conf: cfg,
+	}
 
 	app := &cli.App{
 		Name:      "gofind",
@@ -19,9 +23,9 @@ func main() {
 		UsageText: "gofind [config-entry string] e.g. `gofind repos`",
 		Action: func(c *cli.Context) error {
 			entry := c.Args().Get(0)
-			result := finder.Run(entry)
+			result, err := finder.Run(entry)
 			fmt.Println(result)
-			return nil
+			return err
 		},
 		Commands: []*cli.Command{
 			{

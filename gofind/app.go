@@ -1,11 +1,9 @@
 package gofind
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 func ParsePath(p string) string {
@@ -18,94 +16,58 @@ func ParsePath(p string) string {
 	return p
 }
 
-type App struct {
-	verbose bool
+type GoFind struct {
+	Verbose bool
+	Conf    Config
 }
 
-func (a *App) LogCritical(args ...any) {
-	fmt.Println(args...)
-}
-
-func (a *App) LogVerbose(args ...any) {
-	if a.verbose {
-		fmt.Println(args...)
-	}
-}
-
-func (a *App) CacheAll() error {
-	config := ReadDefaultConfig()
-	config.CacheAll()
-
+func (a *GoFind) CacheAll() error {
 	return nil
 }
 
-func (a *App) Run(entry string) string {
-	a.verbose = false
-
-	if a.verbose {
-		var startTime = time.Now()
-		defer func() {
-			fmt.Println("Execution time:", time.Since(startTime))
-		}()
-	}
-
-	config := ReadDefaultConfig()
-	// Parse Args
-
+func (gf *GoFind) Run(entry string) (string, error) {
 	useDefault := false
 
 	if entry == "" {
-		a.LogVerbose("No arguments provided using default argument")
+		gf.LogVerbose("No arguments provided using default argument")
 		useDefault = true
 	}
 
-	cmd := config.Default
+	cmd := gf.Conf.Default
 
 	if !useDefault {
 		cmd = entry
 	}
 
-	search := config.Commands[cmd]
+	// Preload cache if exists
+	cache := NewCache(gf.Conf.CacheDir)
+	cached, err := cache.Find(cmd)
 
-	// Check if cache is expired
-	if config.Cache[cmd].IsExpired() {
-		a.LogVerbose("Cache is expired, searching for results and rebuilding cache")
-		config.Cache[cmd] = CacheEntry{
-			Matches: search.Results(),
-			Expires: time.Now().Add(time.Hour * 12),
+	if err != nil {
+		if err == ErrCacheNotFound {
+			matches := gf.SearchFor(gf.Conf.Commands[cmd])
+			cached, err = cache.Set(cmd, matches)
+		} else {
+			return "", err
 		}
-		config.Save()
 	}
 
-	matches := config.Cache[cmd].Matches
-
-	a.LogVerbose(fmt.Sprintf("Found %d matches", len(matches)))
-
 	filter := FzfFilter{}
-	result := filter.Find(matches)
+	result := filter.Find(cached.Matches)
 
-	return result.Path
+	return result.Path, nil
 }
 
-type Match struct {
-	Name string
-	Path string
-}
-
-type SearchEntry struct {
-	Root     string `json:"root"`
-	MatchStr string `json:"match"`
-}
-
-func (se SearchEntry) Results() []Match {
-	return SearchFor(se)
-}
-
-func SearchFor(search SearchEntry) []Match {
+func (gf *GoFind) SearchFor(search SearchEntry) []Match {
 	var matches []Match
 	var p = ParsePath(search.Root)
 
-	var results = Must(Finder(p, search.MatchStr))
+	finder := Finder{
+		MaxRecursion: 5,
+		Ignore:       gf.Conf.Ignore,
+	}
+
+	var results = Must(finder.Find(p, search.MatchStr))
 
 	if len(results) == 0 {
 		panic("No results found")
@@ -126,4 +88,14 @@ func SearchFor(search SearchEntry) []Match {
 	}
 
 	return matches
+}
+
+type Match struct {
+	Name string
+	Path string
+}
+
+type SearchEntry struct {
+	Root     string `json:"root"`
+	MatchStr string `json:"match"`
 }

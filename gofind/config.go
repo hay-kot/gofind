@@ -4,13 +4,23 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 type Config struct {
-	Default  string                 `json:"default"`
-	Commands map[string]SearchEntry `json:"commands"`
-	Cache    map[string]CacheEntry  `json:"cache"`
+	Default      string                 `json:"default"`
+	Commands     map[string]SearchEntry `json:"commands"`
+	CacheDir     string                 `json:"cache"`
+	Cache        map[string]CacheEntry  `json:"cache_old"`
+	Ignore       []string               `json:"ignore"`
+	MaxRecursion int                    `json:"max_recursion"`
+}
+
+func DefaultIgnore() []string {
+	return []string{
+		"node_modules",
+		".venv",
+		"venv",
+	}
 }
 
 func DefaultConfigPath() string {
@@ -29,6 +39,12 @@ func ReadConfig(path string) Config {
 
 	MustNotErr(decoder.Decode(&config))
 
+	if config.Ignore == nil {
+		config.Ignore = DefaultIgnore()
+	} else {
+		config.Ignore = append(config.Ignore, DefaultIgnore()...)
+	}
+
 	return config
 }
 
@@ -41,19 +57,6 @@ func ReadDefaultConfig() Config {
 	}
 
 	return ReadConfig(configPath)
-}
-
-func (c Config) CacheAll() {
-	for key, search := range c.Commands {
-		cache := search.Results()
-
-		c.Cache[key] = CacheEntry{
-			Matches: cache,
-			Expires: time.Now().Add(time.Hour * 12),
-		}
-	}
-
-	c.Save()
 }
 
 func (c Config) Save() {
