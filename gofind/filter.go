@@ -36,8 +36,14 @@ func (FzfFilter) formatSearch(repos []Match) string {
 type FzfFilter struct{}
 
 func (f FzfFilter) Find(repos []Match) Match {
-	var parseName = func(line string) string {
-		return strings.TrimSpace(strings.Split(line, "    ")[0])
+	var parseMatchStr = func(line string) (string, string) {
+		strs := strings.Split(line, "    ")
+
+		name := strings.TrimSpace(strs[0])
+
+		path := strings.TrimSpace(strs[len(strs)-1])
+
+		return name, path
 	}
 
 	searchList := f.formatSearch(repos)
@@ -58,11 +64,10 @@ func (f FzfFilter) Find(repos []Match) Match {
 
 	name := strings.TrimSpace(string(bts))
 
-	name = parseName(name)
+	name, path := parseMatchStr(name)
 
 	for _, repo := range repos {
-
-		if repo.Name == name {
+		if repo.Path == path {
 			return repo
 		}
 	}
