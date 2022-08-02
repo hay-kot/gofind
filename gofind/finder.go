@@ -93,6 +93,7 @@ func (fdr *Finder) Find(path []string, glob string) ([]string, error) {
 	finderWg.Wait()
 	close(results)
 
+	// TODO: Do I need this or can I use the original wait group?
 	collectWg.Wait()
 	return matches, nil
 }
