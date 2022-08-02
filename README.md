@@ -4,6 +4,8 @@ GoFind is a small cli program for quickly finding and searching directories usin
 
 **Why though?** The primary use case for this library is to tie into other scripts to quickly and easily navigate (or other action) to a file path. For example you can use an alias to quickly search through all your git repositories and quickly search, find, and navigate in your terminal. See the [examples](#examples) for more details
 
+https://user-images.githubusercontent.com/64056131/182485271-0c906802-c44e-4059-8079-37d6ea86e005.mp4
+
 ## Config
 GoFind uses a json file in `~/.config/gofind.json` to store the configuration for the search entries and the default search. It also uses this file to cache results so that the search is faster on subsequent runs. The config file example here has two jobs,
 
