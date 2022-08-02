@@ -21,8 +21,9 @@ func FuzzyFinder(matches []gofind.Match) (string, error) {
 	setup()
 
 	ctrl := fuzzyFinderController{
-		matches:  matches,
-		selected: 0,
+		matches:      matches,
+		selected:     0,
+		searchLength: len(matches),
 	}
 
 	p := tea.NewProgram(
@@ -44,11 +45,14 @@ func FuzzyFinder(matches []gofind.Match) (string, error) {
 }
 
 type fuzzyFinderController struct {
-	index    []string
-	matches  []gofind.Match
-	selected int
+	index        []string
+	matches      []gofind.Match
+	searchLength int
+	selected     int
 	// key = filtered index, value = original index
 	indexmap map[int]int
+
+	limit int
 }
 
 // Selected returns the active selection by the user, or any empty object
@@ -76,6 +80,7 @@ func (c *fuzzyFinderController) Selected() gofind.Match {
 // Search returns a sorted list of matches uses a fuzzy search algorithm
 func (c *fuzzyFinderController) Search(str string) []gofind.Match {
 	if str == "" {
+		c.searchLength = len(c.matches)
 		return c.matches
 	}
 
@@ -95,6 +100,7 @@ func (c *fuzzyFinderController) Search(str string) []gofind.Match {
 		c.indexmap[i] = match.Index
 	}
 
+	c.searchLength = len(results)
 	return results
 }
 
@@ -103,7 +109,6 @@ type fuzzyFinderView struct {
 	search textinput.Model
 	height int
 	shift  int
-	limit  int
 }
 
 func newFuzzyFinderView(ctrl *fuzzyFinderController) fuzzyFinderView {
@@ -147,7 +152,7 @@ func (m fuzzyFinderView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "down":
-			if m.ctrl.selected < len(m.ctrl.matches)-1 {
+			if m.ctrl.selected < m.ctrl.limit-1 {
 				m.ctrl.selected++
 
 				if m.ctrl.selected >= len(m.ctrl.matches) {
@@ -166,14 +171,25 @@ func (m fuzzyFinderView) View() string {
 	str := strings.Builder{}
 
 	// Calculate the number of allowed_rows we can display
-	m.limit = m.height - 12
+	m.ctrl.limit = m.height - 3
+
+	var determinedMax int
+	if m.ctrl.limit < 0 {
+		determinedMax = len(results)
+	} else if len(results) > m.ctrl.limit {
+		determinedMax = m.ctrl.limit
+	} else {
+		determinedMax = len(results)
+	}
+
+	m.ctrl.limit = determinedMax
 
 	str.WriteString(
 		m.search.View(),
 	)
 
 	str.WriteString(ui.Subtle(fmt.Sprintf("\n  %d/%d", len(results), len(m.ctrl.matches))) + "\n")
-	str.WriteString(m.fmtMatches(results))
+	str.WriteString(m.fmtMatches(results[:determinedMax]))
 
 	return str.String()
 }
