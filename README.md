@@ -61,7 +61,7 @@ GLOBAL OPTIONS:
 **Open VSCode**
 
 ```shell
-alias fcode="code \`gofind repos\`"
+alias fcode="code \`gofind find repos\`"
 ```
 
 **Change into Directory**
@@ -70,7 +70,7 @@ alias fcode="code \`gofind repos\`"
 repos() {
     # Navigate to repos director and open target directory is specified
     if [ -z "$1" ]; then
-        cd `gofind repos`
+        cd `gofind find repos`
         return
     fi
     cd ~/code/repos/$1
