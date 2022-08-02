@@ -13,6 +13,11 @@ type Finder struct {
 	Ignore           []string
 }
 
+type Match struct {
+	Name string
+	Path string
+}
+
 func (fdr *Finder) DirWalker(channel chan string, root string, pattern string) {
 	dirs := Must(os.ReadDir(root))
 	w := sync.WaitGroup{}
@@ -49,7 +54,6 @@ func (fdr *Finder) DirWalker(channel chan string, root string, pattern string) {
 	}
 
 	w.Wait()
-
 }
 
 func (fdr *Finder) FindAll(wg *sync.WaitGroup, channel chan string, root string, pattern string) {
@@ -70,16 +74,18 @@ func (fdr *Finder) CollectResults(wg *sync.WaitGroup, channel chan string, resul
 }
 
 func (fdr *Finder) Find(path string, glob string) ([]string, error) {
-	matches := []string{}
+	var (
+		matches = []string{}
+		results = make(chan string)
+	)
 
 	wg := sync.WaitGroup{}
 
-	results := make(chan string)
+	wg.Add(2)
 
-	wg.Add(1)
 	go fdr.FindAll(&wg, results, path, glob)
-	wg.Add(1)
 	go fdr.CollectResults(&wg, results, &matches)
+
 	wg.Wait()
 
 	return matches, nil

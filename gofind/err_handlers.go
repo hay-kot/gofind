@@ -1,14 +1,16 @@
 package gofind
 
+import "github.com/hay-kot/yal"
+
 func Must[T any](v T, err error) T {
 	if err != nil {
-		panic(err)
+		yal.Fatal(err.Error())
 	}
 	return v
 }
 
-func MustNotErr(err error) {
+func NoErr(err error) {
 	if err != nil {
-		panic(err)
+		yal.Fatal(err.Error())
 	}
 }

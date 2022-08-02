@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/hay-kot/yal"
 )
 
 var (
@@ -28,7 +30,12 @@ func NewCache(dir string) Cache {
 
 	// Create directory if it doesn't exist
 	if _, err := os.Stat(p); os.IsNotExist(err) {
-		MustNotErr(os.MkdirAll(p, 0755))
+		err := os.MkdirAll(p, 0755)
+
+		if err != nil {
+			yal.Errorf("os.MkdirAll(p=%s) failed with error '%s'", p, err.Error())
+			yal.Fatal(err)
+		}
 	}
 
 	return Cache{
@@ -40,7 +47,7 @@ func (c Cache) load(p string) CacheEntry {
 	entry := CacheEntry{}
 	file := Must(os.Open(p))
 	decoder := json.NewDecoder(file)
-	MustNotErr(decoder.Decode(&entry))
+	NoErr(decoder.Decode(&entry))
 	return entry
 }
 
@@ -66,9 +73,12 @@ func (c Cache) Set(namespace string, results []Match) (*CacheEntry, error) {
 		Expires: time.Now().Add(time.Hour * 24),
 	}
 
+	// Create Parent
+	NoErr(os.MkdirAll(filepath.Dir(p), 0755))
+
 	file := Must(os.Create(p))
 	encoder := json.NewEncoder(file)
-	MustNotErr(encoder.Encode(entry))
+	NoErr(encoder.Encode(entry))
 	return &entry, nil
 }
 

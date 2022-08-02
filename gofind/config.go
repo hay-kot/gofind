@@ -4,15 +4,40 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/hay-kot/yal"
 )
 
 type Config struct {
 	Default      string                 `json:"default"`
 	Commands     map[string]SearchEntry `json:"commands"`
 	CacheDir     string                 `json:"cache"`
-	Cache        map[string]CacheEntry  `json:"cache_old"`
 	Ignore       []string               `json:"ignore"`
 	MaxRecursion int                    `json:"max_recursion"`
+}
+
+type SearchEntry struct {
+	Root     string `json:"root"`
+	MatchStr string `json:"match"`
+}
+
+func ConfigSetup() error {
+	path := DefaultConfigPath()
+	if _, err := os.Stat(path); os.IsExist(err) {
+		yal.Errorf("config file already exists %s", path)
+		os.Exit(1)
+	}
+
+	c := Config{
+		Default:      "",
+		Commands:     make(map[string]SearchEntry),
+		CacheDir:     "",
+		Ignore:       []string{},
+		MaxRecursion: 10,
+	}
+
+	c.Save()
+	return nil
 }
 
 func DefaultIgnore() []string {
@@ -37,7 +62,7 @@ func ReadConfig(path string) Config {
 
 	decoder := json.NewDecoder(file)
 
-	MustNotErr(decoder.Decode(&config))
+	NoErr(decoder.Decode(&config))
 
 	if config.Ignore == nil {
 		config.Ignore = DefaultIgnore()
@@ -53,7 +78,8 @@ func ReadDefaultConfig() Config {
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		panic("Config file does not exist")
+		yal.Errorf("Config file not found %s", configPath)
+		os.Exit(1)
 	}
 
 	return ReadConfig(configPath)
@@ -66,5 +92,5 @@ func (c Config) Save() {
 	file := Must(os.Create(configPath))
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	MustNotErr(encoder.Encode(c))
+	NoErr(encoder.Encode(c))
 }

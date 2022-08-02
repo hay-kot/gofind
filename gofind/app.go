@@ -1,10 +1,11 @@
 package gofind
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/hay-kot/yal"
 )
 
 func ParsePath(p string) string {
@@ -28,18 +29,16 @@ func (gf *GoFind) CacheAll() error {
 	for key, entry := range gf.Conf.Commands {
 		matches := gf.SearchFor(entry)
 		cache.Set(key, matches)
-
-		fmt.Printf("Cached %v results for %s\n", len(matches), key)
+		yal.Infof("Cached %v results for %s", len(matches), key)
 	}
-
 	return nil
 }
 
-func (gf *GoFind) Run(entry string) (string, error) {
+func (gf *GoFind) Run(entry string) ([]Match, error) {
 	useDefault := false
 
 	if entry == "" {
-		gf.LogVerbose("No arguments provided using default argument")
+		yal.Debug("no arguments provided using default argument")
 		useDefault = true
 	}
 
@@ -56,16 +55,13 @@ func (gf *GoFind) Run(entry string) (string, error) {
 	if err != nil {
 		if err == ErrCacheNotFound {
 			matches := gf.SearchFor(gf.Conf.Commands[cmd])
-			cached, err = cache.Set(cmd, matches)
+			cached, _ = cache.Set(cmd, matches)
 		} else {
-			return "", err
+			return []Match{}, err
 		}
 	}
 
-	filter := FzfFilter{}
-	result := filter.Find(cached.Matches)
-
-	return result.Path, nil
+	return cached.Matches, nil
 }
 
 func (gf *GoFind) SearchFor(search SearchEntry) []Match {
@@ -80,7 +76,9 @@ func (gf *GoFind) SearchFor(search SearchEntry) []Match {
 	var results = Must(finder.Find(p, search.MatchStr))
 
 	if len(results) == 0 {
-		panic("No results found")
+		yal.Warnf("no results found for path %s", search.Root)
+		yal.Debugf("gf.SearchFor(Root=%s, MatchStr=%s) returned no results", search.Root, search.MatchStr)
+		return matches
 	}
 
 	for _, result := range results {
@@ -100,12 +98,3 @@ func (gf *GoFind) SearchFor(search SearchEntry) []Match {
 	return matches
 }
 
-type Match struct {
-	Name string
-	Path string
-}
-
-type SearchEntry struct {
-	Root     string `json:"root"`
-	MatchStr string `json:"match"`
-}
