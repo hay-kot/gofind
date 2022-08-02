@@ -31,7 +31,7 @@ func ConfigSetup() error {
 	c := Config{
 		Default:      "",
 		Commands:     make(map[string]SearchEntry),
-		CacheDir:     "",
+		CacheDir:     "~/.cache/gofind/",
 		Ignore:       []string{},
 		MaxRecursion: 10,
 	}
