@@ -66,18 +66,22 @@ func (gf *GoFind) Run(entry string) ([]Match, error) {
 
 func (gf *GoFind) SearchFor(search SearchEntry) []Match {
 	var matches []Match
-	var p = ParsePath(search.Root)
+
+	paths := make([]string, len(search.Roots))
+	for i, root := range search.Roots {
+		paths[i] = ParsePath(root)
+	}
 
 	finder := Finder{
 		MaxRecursion: 5,
 		Ignore:       gf.Conf.Ignore,
 	}
 
-	var results = Must(finder.Find(p, search.MatchStr))
+	var results = Must(finder.Find(paths, search.MatchStr))
 
 	if len(results) == 0 {
-		yal.Warnf("no results found for path %s", search.Root)
-		yal.Debugf("gf.SearchFor(Root=%s, MatchStr=%s) returned no results", search.Root, search.MatchStr)
+		yal.Warnf("no results found for path %s", search.Roots)
+		yal.Debugf("gf.SearchFor(Root=%s, MatchStr=%s) returned no results", search.Roots, search.MatchStr)
 		return matches
 	}
 
@@ -97,4 +101,3 @@ func (gf *GoFind) SearchFor(search SearchEntry) []Match {
 
 	return matches
 }
-

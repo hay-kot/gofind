@@ -58,7 +58,6 @@ func (fdr *Finder) DirWalker(channel chan string, root string, pattern string) {
 
 func (fdr *Finder) FindAll(wg *sync.WaitGroup, channel chan string, root string, pattern string) {
 	defer wg.Done()
-	defer close(channel)
 
 	fdr.DirWalker(channel, root, pattern)
 
@@ -73,20 +72,27 @@ func (fdr *Finder) CollectResults(wg *sync.WaitGroup, channel chan string, resul
 
 }
 
-func (fdr *Finder) Find(path string, glob string) ([]string, error) {
+func (fdr *Finder) Find(path []string, glob string) ([]string, error) {
 	var (
 		matches = []string{}
 		results = make(chan string)
 	)
 
-	wg := sync.WaitGroup{}
+	finderWg := sync.WaitGroup{}
+	finderWg.Add(len(path))
 
-	wg.Add(2)
+	for _, root := range path {
+		go fdr.FindAll(&finderWg, results, root, glob)
+	}
 
-	go fdr.FindAll(&wg, results, path, glob)
-	go fdr.CollectResults(&wg, results, &matches)
+	collectWg := sync.WaitGroup{}
+	collectWg.Add(1)
 
-	wg.Wait()
+	go fdr.CollectResults(&collectWg, results, &matches)
 
+	finderWg.Wait()
+	close(results)
+
+	collectWg.Wait()
 	return matches, nil
 }

@@ -111,13 +111,13 @@ func main() {
 
 							key := c.Args().Get(0)
 							entry := gofind.SearchEntry{
-								Root:     c.Args().Get(1),
+								Roots:    []string{c.Args().Get(1)}, //TODO: Let user setup multiple roots!
 								MatchStr: c.Args().Get(2),
 							}
 							cfg.Commands[key] = entry
 							cfg.Save()
 
-							yal.Infof("Key=%s, Root=%s, MatchStr=%s", key, entry.Root, entry.MatchStr)
+							yal.Infof("Key=%s, Root=%s, MatchStr=%s", key, entry.Roots, entry.MatchStr)
 							yal.Info("config entry added successfully")
 							return nil
 						},
@@ -179,7 +179,7 @@ func main() {
 							}
 
 							for key, entry := range cfg.Commands {
-								items = append(items, []string{key, entry.Root, entry.MatchStr})
+								items = append(items, []string{key, strings.Join(entry.Roots, ", "), entry.MatchStr})
 							}
 
 							str.WriteString(ui.Table(items))

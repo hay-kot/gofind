@@ -17,8 +17,8 @@ type Config struct {
 }
 
 type SearchEntry struct {
-	Root     string `json:"root"`
-	MatchStr string `json:"match"`
+	Roots    []string `json:"roots"`
+	MatchStr string   `json:"match"`
 }
 
 func ConfigSetup() error {
