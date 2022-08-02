@@ -5,7 +5,7 @@ import "github.com/charmbracelet/lipgloss"
 var (
 	ColorBlue   = lipgloss.Color("#255F85")
 	ColorRed    = lipgloss.Color("#DA4167")
-	ColorSubtle = lipgloss.Color("#383838")
+	ColorSubtle = lipgloss.Color("#848484")
 )
 var (
 	Bold         = lipgloss.NewStyle().Bold(true).Render
