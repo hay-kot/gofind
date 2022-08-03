@@ -70,9 +70,8 @@ alias fcode="code \`gofind find repos\`"
 repos() {
     # Navigate to repos director and open target directory is specified
     if [ -z "$1" ]; then
-        cd `gofind find repos`
+        cd "`gofind find repos`"
         return
     fi
-    cd ~/code/repos/$1
 }
 ```
