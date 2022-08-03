@@ -23,7 +23,7 @@ https://user-images.githubusercontent.com/64056131/182485271-0c906802-c44e-4059-
 
 ## Installation
 
-You can install GoFind by running `go install github.com/hay-kot/gofind` or download the latest release from [GitHub](https://github.com/hay-kot/gofind/releases)
+You can install GoFind by running `go install github.com/hay-kot/gofind@latest` or download the latest release from [GitHub](https://github.com/hay-kot/gofind/releases)
 
 After installing you must run `gofind setup` to initialize the configuration file and setup the cache
 
