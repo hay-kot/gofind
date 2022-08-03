@@ -188,6 +188,10 @@ func (m fuzzyFinderView) View() string {
 		m.search.View(),
 	)
 
+	if m.ctrl.selected > m.ctrl.limit {
+		m.ctrl.selected = 0
+	}
+
 	str.WriteString(ui.Subtle(fmt.Sprintf("\n  %d/%d", len(results), len(m.ctrl.matches))) + "\n")
 	str.WriteString(m.fmtMatches(results[:determinedMax]))
 
