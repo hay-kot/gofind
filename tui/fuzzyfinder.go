@@ -184,17 +184,13 @@ func (m fuzzyFinderView) View() string {
 
 	m.ctrl.limit = determinedMax
 
-	str.WriteString(
-		m.search.View(),
-	)
-
 	if m.ctrl.selected > m.ctrl.limit {
 		m.ctrl.selected = 0
 	}
 
+	str.WriteString(m.search.View())
 	str.WriteString(ui.Subtle(fmt.Sprintf("\n  %d/%d", len(results), len(m.ctrl.matches))) + "\n")
 	str.WriteString(m.fmtMatches(results[:determinedMax]))
-
 	return str.String()
 }
 
@@ -207,6 +203,8 @@ func (m fuzzyFinderView) fmtMatches(repos []gofind.Match) string {
 		}
 	}
 
+	search := m.search.Value()
+
 	str := strings.Builder{}
 	for i, repo := range repos {
 		spaces := (longest + 5) - len(repo.Name)
@@ -216,6 +214,11 @@ func (m fuzzyFinderView) fmtMatches(repos []gofind.Match) string {
 		if m.ctrl.selected == i {
 			prefix = ui.HighlightRow(ui.AccentRed(">"))
 			text = ui.HighlightRow(ui.Bold(text))
+		} else {
+			if search != "" && strings.Contains(repo.Name, search) {
+				// Highlight the search term
+				text = strings.ReplaceAll(text, search, ui.Bold(search))
+			}
 		}
 
 		str.WriteString(prefix + text + "\n")
