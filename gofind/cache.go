@@ -33,8 +33,7 @@ func NewCache(dir string) Cache {
 		err := os.MkdirAll(p, 0755)
 
 		if err != nil {
-			yal.Errorf("os.MkdirAll(p=%s) failed with error '%s'", p, err.Error())
-			yal.Fatal(err)
+			yal.Fatalf("os.MkdirAll(p=%s) failed with error '%s'", p, err.Error())
 		}
 	}
 

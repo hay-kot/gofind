@@ -6,7 +6,7 @@ require (
 	github.com/charmbracelet/bubbles v0.13.0
 	github.com/charmbracelet/bubbletea v0.22.0
 	github.com/charmbracelet/lipgloss v0.5.0
-	github.com/hay-kot/yal v0.0.1
+	github.com/hay-kot/yal v0.0.2
 	github.com/jwalton/go-supportscolor v1.1.0
 	github.com/muesli/termenv v0.11.1-0.20220212125758-44cd13922739
 	github.com/sahilm/fuzzy v0.1.0

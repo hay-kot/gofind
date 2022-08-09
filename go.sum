@@ -15,6 +15,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.1 h1:r/myEWzV9lfsM1tFLgDyu0atFtJ1fXn261LKY
 github.com/cpuguy83/go-md2man/v2 v2.0.1/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/hay-kot/yal v0.0.1 h1:nDHm5iW720DPKo2Jf5oevx3qdYkCO6o0cVjgHESzuFM=
 github.com/hay-kot/yal v0.0.1/go.mod h1:Z/kZ0WXr9cdcDNR0uWMPbZXFY7S6Pgc03KKhVhS3vvI=
+github.com/hay-kot/yal v0.0.2 h1:Ytunt/g5KflujJ03dLTPFpEMjvYAomezD7kWq7AZNMs=
+github.com/hay-kot/yal v0.0.2/go.mod h1:Z/kZ0WXr9cdcDNR0uWMPbZXFY7S6Pgc03KKhVhS3vvI=
 github.com/jwalton/go-supportscolor v1.1.0 h1:HsXFJdMPjRUAx8cIW6g30hVSFYaxh9yRQwEWgkAR7lQ=
 github.com/jwalton/go-supportscolor v1.1.0/go.mod h1:hFVUAZV2cWg+WFFC4v8pT2X/S2qUUBYMioBD9AINXGs=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
