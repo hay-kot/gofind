@@ -16,7 +16,7 @@ import (
 
 func main() {
 	app := &cli.App{
-		Version: "0.2.0",
+		Version: "0.3.0",
 		Name:    "gofind",
 		Usage:   "an interactive search for directories using the filepath.Match function",
 		Commands: []*cli.Command{
