@@ -52,6 +52,7 @@ func main() {
 					}
 
 					log.Info().Dur("elapsed", time.Since(start)).Msg("cache updated")
+					fmt.Println("cached updated in", time.Since(start))
 					return nil
 				},
 			},

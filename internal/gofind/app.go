@@ -69,7 +69,7 @@ func (gf *GoFind) SearchFor(search config.SearchEntry) []Match {
 	}
 
 	finder := Finder{
-		MaxRecursion: 5,
+		MaxRecursion: gf.Conf.MaxRecursion,
 		Ignore:       gf.Conf.Ignore,
 	}
 
