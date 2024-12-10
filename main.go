@@ -1,21 +1,22 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/hay-kot/gofind/gofind"
-	"github.com/hay-kot/gofind/tui"
-	"github.com/hay-kot/gofind/ui"
+	"github.com/hay-kot/gofind/internal/gofind"
+	"github.com/hay-kot/gofind/internal/tui"
+	"github.com/hay-kot/gofind/internal/ui"
 	"github.com/hay-kot/yal"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 func main() {
-	app := &cli.App{
+	app := &cli.Command{
 		Version: "0.3.0",
 		Name:    "gofind",
 		Usage:   "an interactive search for directories using the filepath.Match function",
@@ -30,7 +31,7 @@ func main() {
 					},
 				},
 				Aliases: []string{"c"},
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 					cfg := gofind.ReadDefaultConfig()
 					finder := gofind.GoFind{
 						Conf: cfg,
@@ -54,7 +55,7 @@ func main() {
 				UsageText: "gofind find [config-entry string] e.g. `gofind find repos`",
 				Flags:     []cli.Flag{},
 				Aliases:   []string{"f"},
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 					cfg := gofind.ReadDefaultConfig()
 					finder := gofind.GoFind{
 						Conf: cfg,
@@ -77,7 +78,7 @@ func main() {
 			{
 				Name:  "setup",
 				Usage: "first time setup",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 					if _, err := os.Stat(gofind.DefaultConfigPath()); err == nil {
 						yal.Errorf("config file already exists: %s", gofind.DefaultConfigPath())
 						return nil
@@ -98,11 +99,11 @@ func main() {
 				Name:    "config",
 				Aliases: []string{"c"},
 				Usage:   "add, remove, or list configuration entries",
-				Subcommands: []*cli.Command{
+				Commands: []*cli.Command{
 					{
 						Name:  "add",
 						Usage: "add a config entry",
-						Action: func(c *cli.Context) error {
+						Action: func(ctx context.Context, c *cli.Command) error {
 							cfg := gofind.ReadDefaultConfig()
 							if c.NArg() < 3 {
 								yal.Error("missing arguments")
@@ -125,7 +126,7 @@ func main() {
 					{
 						Name:  "remove",
 						Usage: "remove a config entry",
-						Action: func(c *cli.Context) error {
+						Action: func(ctx context.Context, c *cli.Command) error {
 							cfg := gofind.ReadDefaultConfig()
 							if c.NArg() < 1 {
 								yal.Error("missing arguments")
@@ -149,7 +150,7 @@ func main() {
 								Usage: "returns only the path",
 							},
 						},
-						Action: func(c *cli.Context) error {
+						Action: func(ctx context.Context, c *cli.Command) error {
 							cfg := gofind.ReadDefaultConfig()
 							p := gofind.DefaultConfigPath()
 
@@ -192,7 +193,7 @@ func main() {
 		},
 	}
 
-	err := app.Run(os.Args)
+	err := app.Run(context.Background(), os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}

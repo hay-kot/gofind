@@ -42,14 +42,6 @@ func NewCache(dir string) Cache {
 	}
 }
 
-func (c Cache) load(p string) CacheEntry {
-	entry := CacheEntry{}
-	file := Must(os.Open(p))
-	decoder := json.NewDecoder(file)
-	NoErr(decoder.Decode(&entry))
-	return entry
-}
-
 // Find will find the first match in the cache or return an error if the cache
 // isn't found.
 func (c Cache) Find(namespace string) (*CacheEntry, error) {

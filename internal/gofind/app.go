@@ -28,7 +28,7 @@ func (gf *GoFind) CacheAll() error {
 
 	for key, entry := range gf.Conf.Commands {
 		matches := gf.SearchFor(entry)
-		cache.Set(key, matches)
+		_, _ = cache.Set(key, matches)
 		yal.Infof("Cached %v results for %s", len(matches), key)
 	}
 	return nil
