@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hay-kot/yal"
+	"github.com/rs/zerolog/log"
 )
 
 func ParsePath(p string) string {
@@ -29,23 +29,17 @@ func (gf *GoFind) CacheAll() error {
 	for key, entry := range gf.Conf.Commands {
 		matches := gf.SearchFor(entry)
 		_, _ = cache.Set(key, matches)
-		yal.Infof("Cached %v results for %s", len(matches), key)
+		log.Info().Str("key", key).Int("matches", len(matches)).Msg("cached results")
 	}
 	return nil
 }
 
 func (gf *GoFind) Run(entry string) ([]Match, error) {
-	useDefault := false
 
+	cmd := entry
 	if entry == "" {
-		yal.Debug("no arguments provided using default argument")
-		useDefault = true
-	}
-
-	cmd := gf.Conf.Default
-
-	if !useDefault {
-		cmd = entry
+		log.Debug().Msg("no arguments provided using default")
+		cmd = gf.Conf.Default
 	}
 
 	// Preload cache if exists
@@ -80,8 +74,8 @@ func (gf *GoFind) SearchFor(search SearchEntry) []Match {
 	var results = Must(finder.Find(paths, search.MatchStr))
 
 	if len(results) == 0 {
-		yal.Warnf("no results found for path %s", search.Roots)
-		yal.Debugf("gf.SearchFor(Root=%s, MatchStr=%s) returned no results", search.Roots, search.MatchStr)
+		log.Warn().Strs("path", search.Roots).Msg("no results found")
+		log.Debug().Msgf("gf.SearchFor(Root=%s, MatchStr=%s) returned no results", search.Roots, search.MatchStr)
 		return matches
 	}
 

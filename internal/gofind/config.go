@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hay-kot/yal"
+	"github.com/rs/zerolog/log"
 )
 
 type Config struct {
@@ -24,7 +24,7 @@ type SearchEntry struct {
 func ConfigSetup() error {
 	path := DefaultConfigPath()
 	if _, err := os.Stat(path); os.IsExist(err) {
-		yal.Errorf("config file already exists %s", path)
+		log.Error().Str("path", path).Msg("config already exists")
 		os.Exit(1)
 	}
 
@@ -78,8 +78,7 @@ func ReadDefaultConfig() Config {
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		yal.Errorf("Config file not found %s", configPath)
-		os.Exit(1)
+		log.Fatal().Str("path", configPath).Msg("config file not found")
 	}
 
 	return ReadConfig(configPath)

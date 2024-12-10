@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/hay-kot/yal"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -33,7 +33,7 @@ func NewCache(dir string) Cache {
 		err := os.MkdirAll(p, 0755)
 
 		if err != nil {
-			yal.Fatalf("os.MkdirAll(p=%s) failed with error '%s'", p, err.Error())
+			log.Fatal().Err(err).Msgf("os.MkdirAll(p=%s) failed with error '%s'", p, err.Error())
 		}
 	}
 

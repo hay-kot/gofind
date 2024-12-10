@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -11,7 +10,7 @@ import (
 	"github.com/hay-kot/gofind/internal/gofind"
 	"github.com/hay-kot/gofind/internal/tui"
 	"github.com/hay-kot/gofind/internal/ui"
-	"github.com/hay-kot/yal"
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v3"
 )
 
@@ -41,11 +40,11 @@ func main() {
 
 					err := finder.CacheAll()
 					if err != nil {
-						yal.Error(err.Error())
+						log.Err(err).Msg("failed to update cache")
 						return err
 					}
 
-					yal.Infof("caches updated in: %s", time.Since(start))
+					log.Info().Dur("elapsed", time.Since(start)).Msg("cache updated")
 					return nil
 				},
 			},
@@ -65,7 +64,7 @@ func main() {
 
 					matches, err := finder.Run(entry)
 					if err != nil {
-						yal.Error("finder.Run(%s) failed: %s", entry, err.Error())
+						log.Err(err).Str("arg", entry).Msg("finder.Run failed")
 						return err
 					}
 
@@ -80,18 +79,18 @@ func main() {
 				Usage: "first time setup",
 				Action: func(ctx context.Context, c *cli.Command) error {
 					if _, err := os.Stat(gofind.DefaultConfigPath()); err == nil {
-						yal.Errorf("config file already exists: %s", gofind.DefaultConfigPath())
+						log.Warn().Str("path", gofind.DefaultConfigPath()).Msg("config file already exists")
 						return nil
 					}
 
 					err := gofind.ConfigSetup()
 
 					if err != nil {
-						yal.Error(err.Error())
+						log.Err(err).Msg("config setup failed")
 						return err
 					}
 
-					yal.Infof("config file created: %s", gofind.DefaultConfigPath())
+					log.Info().Str("path", gofind.DefaultConfigPath()).Msg("config file created")
 					return nil
 				},
 			},
@@ -100,47 +99,6 @@ func main() {
 				Aliases: []string{"c"},
 				Usage:   "add, remove, or list configuration entries",
 				Commands: []*cli.Command{
-					{
-						Name:  "add",
-						Usage: "add a config entry",
-						Action: func(ctx context.Context, c *cli.Command) error {
-							cfg := gofind.ReadDefaultConfig()
-							if c.NArg() < 3 {
-								yal.Error("missing arguments")
-								return nil
-							}
-
-							key := c.Args().Get(0)
-							entry := gofind.SearchEntry{
-								Roots:    []string{c.Args().Get(1)}, //TODO: Let user setup multiple roots!
-								MatchStr: c.Args().Get(2),
-							}
-							cfg.Commands[key] = entry
-							cfg.Save()
-
-							yal.Infof("Key=%s, Root=%s, MatchStr=%s", key, entry.Roots, entry.MatchStr)
-							yal.Info("config entry added successfully")
-							return nil
-						},
-					},
-					{
-						Name:  "remove",
-						Usage: "remove a config entry",
-						Action: func(ctx context.Context, c *cli.Command) error {
-							cfg := gofind.ReadDefaultConfig()
-							if c.NArg() < 1 {
-								yal.Error("missing arguments")
-								return nil
-							}
-
-							key := c.Args().Get(0)
-							delete(cfg.Commands, key)
-							cfg.Save()
-
-							yal.Infof("Key=%s removed successfully", key)
-							return nil
-						},
-					},
 					{
 						Name:  "list",
 						Usage: "list all config entries",
@@ -195,6 +153,6 @@ func main() {
 
 	err := app.Run(context.Background(), os.Args)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("gofind failed")
 	}
 }
