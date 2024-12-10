@@ -7,14 +7,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hay-kot/gofind/internal/core/config"
 	"github.com/hay-kot/gofind/internal/gofind"
 	"github.com/hay-kot/gofind/internal/tui"
 	"github.com/hay-kot/gofind/internal/ui"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v3"
 )
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr}).
+		With().Caller().Logger().
+		Level(zerolog.WarnLevel)
+
 	app := &cli.Command{
 		Version: "0.3.0",
 		Name:    "gofind",
@@ -31,14 +37,16 @@ func main() {
 				},
 				Aliases: []string{"c"},
 				Action: func(ctx context.Context, c *cli.Command) error {
-					cfg := gofind.ReadDefaultConfig()
-					finder := gofind.GoFind{
-						Conf: cfg,
+					cfg, err := config.ReadFile(config.XDGConfigPath())
+					if err != nil {
+						return err
 					}
+
+					finder := gofind.GoFind{Conf: cfg}
 
 					start := time.Now()
 
-					err := finder.CacheAll()
+					err = finder.CacheAll()
 					if err != nil {
 						log.Err(err).Msg("failed to update cache")
 						return err
@@ -55,10 +63,12 @@ func main() {
 				Flags:     []cli.Flag{},
 				Aliases:   []string{"f"},
 				Action: func(ctx context.Context, c *cli.Command) error {
-					cfg := gofind.ReadDefaultConfig()
-					finder := gofind.GoFind{
-						Conf: cfg,
+					cfg, err := config.ReadFile(config.XDGConfigPath())
+					if err != nil {
+						return err
 					}
+
+					finder := gofind.GoFind{Conf: cfg}
 
 					entry := c.Args().Get(0)
 
@@ -72,26 +82,6 @@ func main() {
 
 					fmt.Println(result)
 					return err
-				},
-			},
-			{
-				Name:  "setup",
-				Usage: "first time setup",
-				Action: func(ctx context.Context, c *cli.Command) error {
-					if _, err := os.Stat(gofind.DefaultConfigPath()); err == nil {
-						log.Warn().Str("path", gofind.DefaultConfigPath()).Msg("config file already exists")
-						return nil
-					}
-
-					err := gofind.ConfigSetup()
-
-					if err != nil {
-						log.Err(err).Msg("config setup failed")
-						return err
-					}
-
-					log.Info().Str("path", gofind.DefaultConfigPath()).Msg("config file created")
-					return nil
 				},
 			},
 			{
@@ -109,8 +99,12 @@ func main() {
 							},
 						},
 						Action: func(ctx context.Context, c *cli.Command) error {
-							cfg := gofind.ReadDefaultConfig()
-							p := gofind.DefaultConfigPath()
+							cfg, err := config.ReadFile(config.XDGConfigPath())
+							if err != nil {
+								return err
+							}
+
+							p := config.XDGConfigPath()
 
 							if c.Bool("path") {
 								fmt.Println(p)

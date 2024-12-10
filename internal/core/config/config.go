@@ -19,7 +19,7 @@ func Default() *Config {
 	return &Config{
 		Default:      "",
 		Commands:     make(map[string]SearchEntry),
-		CacheDir:     "~/.cache/gofind/",
+		CacheDir:     XDGCachePath(),
 		Ignore:       []string{},
 		MaxRecursion: 10,
 	}

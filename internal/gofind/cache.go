@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrCacheNotFound = errors.New("Cache not found")
+	ErrCacheNotFound = errors.New("cache not found")
 )
 
 type Cache struct {

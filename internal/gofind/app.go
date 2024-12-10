@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hay-kot/gofind/internal/core/config"
 	"github.com/rs/zerolog/log"
 )
 
@@ -20,7 +21,7 @@ func ParsePath(p string) string {
 
 type GoFind struct {
 	Verbose bool
-	Conf    Config
+	Conf    *config.Config
 }
 
 func (gf *GoFind) CacheAll() error {
@@ -28,14 +29,16 @@ func (gf *GoFind) CacheAll() error {
 
 	for key, entry := range gf.Conf.Commands {
 		matches := gf.SearchFor(entry)
-		_, _ = cache.Set(key, matches)
+		_, err := cache.Set(key, matches)
+		if err != nil {
+			return err
+		}
 		log.Info().Str("key", key).Int("matches", len(matches)).Msg("cached results")
 	}
 	return nil
 }
 
 func (gf *GoFind) Run(entry string) ([]Match, error) {
-
 	cmd := entry
 	if entry == "" {
 		log.Debug().Msg("no arguments provided using default")
@@ -45,7 +48,6 @@ func (gf *GoFind) Run(entry string) ([]Match, error) {
 	// Preload cache if exists
 	cache := NewCache(gf.Conf.CacheDir)
 	cached, err := cache.Find(cmd)
-
 	if err != nil {
 		if err == ErrCacheNotFound {
 			matches := gf.SearchFor(gf.Conf.Commands[cmd])
@@ -58,7 +60,7 @@ func (gf *GoFind) Run(entry string) ([]Match, error) {
 	return cached.Matches, nil
 }
 
-func (gf *GoFind) SearchFor(search SearchEntry) []Match {
+func (gf *GoFind) SearchFor(search config.SearchEntry) []Match {
 	var matches []Match
 
 	paths := make([]string, len(search.Roots))
@@ -71,7 +73,7 @@ func (gf *GoFind) SearchFor(search SearchEntry) []Match {
 		Ignore:       gf.Conf.Ignore,
 	}
 
-	var results = Must(finder.Find(paths, search.MatchStr))
+	results := Must(finder.Find(paths, search.MatchStr))
 
 	if len(results) == 0 {
 		log.Warn().Strs("path", search.Roots).Msg("no results found")
