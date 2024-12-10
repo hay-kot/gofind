@@ -1,10 +1,13 @@
 package gofind
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Finder struct {
@@ -19,7 +22,13 @@ type Match struct {
 }
 
 func (fdr *Finder) DirWalker(channel chan string, root string, pattern string) {
-	dirs := Must(os.ReadDir(root))
+	dirs, err := os.ReadDir(root)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			log.Debug().Str("path", root).Msg("path provided but does not exist")
+			return
+		}
+	}
 
 	// Early termination for the current directory
 	for _, dir := range dirs {
