@@ -8,9 +8,3 @@ func Must[T any](v T, err error) T {
 	}
 	return v
 }
-
-func NoErr(err error) {
-	if err != nil {
-		log.Fatal().Err(err).Msg(err.Error())
-	}
-}
