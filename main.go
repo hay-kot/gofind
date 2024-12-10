@@ -35,7 +35,6 @@ func main() {
 						Usage: "specific entry to re-cache",
 					},
 				},
-				Aliases: []string{"c"},
 				Action: func(ctx context.Context, c *cli.Command) error {
 					cfg, err := config.ReadFile(config.XDGConfigPath())
 					if err != nil {
@@ -60,8 +59,6 @@ func main() {
 				Name:      "find",
 				Usage:     "run interactive finder for entry",
 				UsageText: "gofind find [config-entry string] e.g. `gofind find repos`",
-				Flags:     []cli.Flag{},
-				Aliases:   []string{"f"},
 				Action: func(ctx context.Context, c *cli.Command) error {
 					cfg, err := config.ReadFile(config.XDGConfigPath())
 					if err != nil {
