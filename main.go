@@ -7,16 +7,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/hay-kot/gofind/internal/core/config"
 	"github.com/hay-kot/gofind/internal/gofind"
 	"github.com/hay-kot/gofind/internal/tui"
 	"github.com/hay-kot/gofind/internal/ui"
+	"github.com/muesli/termenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v3"
 )
 
 func main() {
+	// Sets colors so they show up in stderr:
+	//
+	// Stolen from
+	//
+	// - https://github.com/charmbracelet/gum/blob/6d405c49b1b929b771cda5fe939cf5900e392b70/main.go#L31
+	lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).Profile)
+
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr}).
 		With().Caller().Logger().
 		Level(zerolog.WarnLevel)
