@@ -3,6 +3,7 @@ package gofind
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/hay-kot/gofind/internal/core/config"
@@ -95,5 +96,8 @@ func (gf *GoFind) SearchFor(search config.SearchEntry) []Match {
 		})
 	}
 
+	slices.SortFunc(matches, func(a, b Match) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 	return matches
 }
