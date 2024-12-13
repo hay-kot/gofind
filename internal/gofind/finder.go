@@ -1,10 +1,13 @@
 package gofind
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Finder struct {
@@ -19,48 +22,53 @@ type Match struct {
 }
 
 func (fdr *Finder) DirWalker(channel chan string, root string, pattern string) {
-	dirs := Must(os.ReadDir(root))
-	w := sync.WaitGroup{}
+	dirs, err := os.ReadDir(root)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			log.Debug().Str("path", root).Msg("path provided but does not exist")
+			return
+		}
+	}
 
-	found := false
-	collection := []fs.DirEntry{}
-
+	// Early termination for the current directory
 	for _, dir := range dirs {
-		// Early Return if directory is in ignore list
 		for _, ignore := range fdr.Ignore {
 			if Must(filepath.Match(ignore, dir.Name())) {
 				return
 			}
 		}
 
+		// Match the pattern
 		if Must(filepath.Match(pattern, dir.Name())) {
 			channel <- filepath.Join(root, dir.Name())
-			found = true
-		} else if dir.IsDir() {
-			func(dir fs.DirEntry) {
-				collection = append(collection, dir)
-			}(dir)
+			return
 		}
 	}
 
-	if !found {
-		for _, dir := range collection {
-			w.Add(1)
+	// Use a buffered channel as a semaphore to limit goroutines
+	sem := make(chan struct{}, 10) // Max 10 concurrent goroutines
+
+	var wg sync.WaitGroup
+	for _, dir := range dirs {
+		if dir.IsDir() {
+			wg.Add(1)
+			sem <- struct{}{} // Acquire semaphore
+
 			go func(d fs.DirEntry) {
-				defer w.Done()
+				defer wg.Done()
+				defer func() { <-sem }() // Release semaphore
 				fdr.DirWalker(channel, filepath.Join(root, d.Name()), pattern)
 			}(dir)
 		}
 	}
 
-	w.Wait()
+	wg.Wait()
 }
 
 func (fdr *Finder) FindAll(wg *sync.WaitGroup, channel chan string, root string, pattern string) {
 	defer wg.Done()
 
 	fdr.DirWalker(channel, root, pattern)
-
 }
 
 func (fdr *Finder) CollectResults(wg *sync.WaitGroup, channel chan string, results *[]string) {
@@ -69,7 +77,6 @@ func (fdr *Finder) CollectResults(wg *sync.WaitGroup, channel chan string, resul
 	for result := range channel {
 		*results = append(*results, result)
 	}
-
 }
 
 func (fdr *Finder) Find(path []string, glob string) ([]string, error) {

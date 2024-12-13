@@ -8,12 +8,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/hay-kot/yal"
+	"github.com/rs/zerolog/log"
 )
 
-var (
-	ErrCacheNotFound = errors.New("Cache not found")
-)
+var ErrCacheNotFound = errors.New("cache not found")
 
 type Cache struct {
 	Dir string
@@ -31,23 +29,14 @@ func NewCache(dir string) Cache {
 	// Create directory if it doesn't exist
 	if _, err := os.Stat(p); os.IsNotExist(err) {
 		err := os.MkdirAll(p, 0755)
-
 		if err != nil {
-			yal.Fatalf("os.MkdirAll(p=%s) failed with error '%s'", p, err.Error())
+			log.Fatal().Err(err).Msgf("os.MkdirAll(p=%s) failed with error '%s'", p, err.Error())
 		}
 	}
 
 	return Cache{
 		Dir: dir,
 	}
-}
-
-func (c Cache) load(p string) CacheEntry {
-	entry := CacheEntry{}
-	file := Must(os.Open(p))
-	decoder := json.NewDecoder(file)
-	NoErr(decoder.Decode(&entry))
-	return entry
 }
 
 // Find will find the first match in the cache or return an error if the cache
@@ -73,11 +62,17 @@ func (c Cache) Set(namespace string, results []Match) (*CacheEntry, error) {
 	}
 
 	// Create Parent
-	NoErr(os.MkdirAll(filepath.Dir(p), 0755))
+	err := os.MkdirAll(filepath.Dir(p), 0755)
+	if err != nil {
+		return nil, err
+	}
 
 	file := Must(os.Create(p))
 	encoder := json.NewEncoder(file)
-	NoErr(encoder.Encode(entry))
+	err = encoder.Encode(entry)
+	if err != nil {
+		return nil, err
+	}
 	return &entry, nil
 }
 

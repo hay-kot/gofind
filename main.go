@@ -1,21 +1,27 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/hay-kot/gofind/gofind"
-	"github.com/hay-kot/gofind/tui"
-	"github.com/hay-kot/gofind/ui"
-	"github.com/hay-kot/yal"
-	"github.com/urfave/cli/v2"
+	"github.com/hay-kot/gofind/internal/core/config"
+	"github.com/hay-kot/gofind/internal/gofind"
+	"github.com/hay-kot/gofind/internal/tui"
+	"github.com/hay-kot/gofind/internal/ui"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/urfave/cli/v3"
 )
 
 func main() {
-	app := &cli.App{
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr}).
+		With().Caller().Logger().
+		Level(zerolog.WarnLevel)
+
+	app := &cli.Command{
 		Version: "0.3.0",
 		Name:    "gofind",
 		Usage:   "an interactive search for directories using the filepath.Match function",
@@ -29,22 +35,24 @@ func main() {
 						Usage: "specific entry to re-cache",
 					},
 				},
-				Aliases: []string{"c"},
-				Action: func(c *cli.Context) error {
-					cfg := gofind.ReadDefaultConfig()
-					finder := gofind.GoFind{
-						Conf: cfg,
-					}
-
-					start := time.Now()
-
-					err := finder.CacheAll()
+				Action: func(ctx context.Context, c *cli.Command) error {
+					cfg, err := config.ReadFile(config.XDGConfigPath())
 					if err != nil {
-						yal.Error(err.Error())
 						return err
 					}
 
-					yal.Infof("caches updated in: %s", time.Since(start))
+					finder := gofind.GoFind{Conf: cfg}
+
+					start := time.Now()
+
+					err = finder.CacheAll()
+					if err != nil {
+						log.Err(err).Msg("failed to update cache")
+						return err
+					}
+
+					log.Info().Dur("elapsed", time.Since(start)).Msg("cache updated")
+					fmt.Println("cached updated in", time.Since(start))
 					return nil
 				},
 			},
@@ -52,19 +60,19 @@ func main() {
 				Name:      "find",
 				Usage:     "run interactive finder for entry",
 				UsageText: "gofind find [config-entry string] e.g. `gofind find repos`",
-				Flags:     []cli.Flag{},
-				Aliases:   []string{"f"},
-				Action: func(c *cli.Context) error {
-					cfg := gofind.ReadDefaultConfig()
-					finder := gofind.GoFind{
-						Conf: cfg,
+				Action: func(ctx context.Context, c *cli.Command) error {
+					cfg, err := config.ReadFile(config.XDGConfigPath())
+					if err != nil {
+						return err
 					}
+
+					finder := gofind.GoFind{Conf: cfg}
 
 					entry := c.Args().Get(0)
 
 					matches, err := finder.Run(entry)
 					if err != nil {
-						yal.Error("finder.Run(%s) failed: %s", entry, err.Error())
+						log.Err(err).Str("arg", entry).Msg("finder.Run failed")
 						return err
 					}
 
@@ -75,71 +83,10 @@ func main() {
 				},
 			},
 			{
-				Name:  "setup",
-				Usage: "first time setup",
-				Action: func(c *cli.Context) error {
-					if _, err := os.Stat(gofind.DefaultConfigPath()); err == nil {
-						yal.Errorf("config file already exists: %s", gofind.DefaultConfigPath())
-						return nil
-					}
-
-					err := gofind.ConfigSetup()
-
-					if err != nil {
-						yal.Error(err.Error())
-						return err
-					}
-
-					yal.Infof("config file created: %s", gofind.DefaultConfigPath())
-					return nil
-				},
-			},
-			{
 				Name:    "config",
 				Aliases: []string{"c"},
 				Usage:   "add, remove, or list configuration entries",
-				Subcommands: []*cli.Command{
-					{
-						Name:  "add",
-						Usage: "add a config entry",
-						Action: func(c *cli.Context) error {
-							cfg := gofind.ReadDefaultConfig()
-							if c.NArg() < 3 {
-								yal.Error("missing arguments")
-								return nil
-							}
-
-							key := c.Args().Get(0)
-							entry := gofind.SearchEntry{
-								Roots:    []string{c.Args().Get(1)}, //TODO: Let user setup multiple roots!
-								MatchStr: c.Args().Get(2),
-							}
-							cfg.Commands[key] = entry
-							cfg.Save()
-
-							yal.Infof("Key=%s, Root=%s, MatchStr=%s", key, entry.Roots, entry.MatchStr)
-							yal.Info("config entry added successfully")
-							return nil
-						},
-					},
-					{
-						Name:  "remove",
-						Usage: "remove a config entry",
-						Action: func(c *cli.Context) error {
-							cfg := gofind.ReadDefaultConfig()
-							if c.NArg() < 1 {
-								yal.Error("missing arguments")
-								return nil
-							}
-
-							key := c.Args().Get(0)
-							delete(cfg.Commands, key)
-							cfg.Save()
-
-							yal.Infof("Key=%s removed successfully", key)
-							return nil
-						},
-					},
+				Commands: []*cli.Command{
 					{
 						Name:  "list",
 						Usage: "list all config entries",
@@ -149,9 +96,13 @@ func main() {
 								Usage: "returns only the path",
 							},
 						},
-						Action: func(c *cli.Context) error {
-							cfg := gofind.ReadDefaultConfig()
-							p := gofind.DefaultConfigPath()
+						Action: func(ctx context.Context, c *cli.Command) error {
+							cfg, err := config.ReadFile(config.XDGConfigPath())
+							if err != nil {
+								return err
+							}
+
+							p := config.XDGConfigPath()
 
 							if c.Bool("path") {
 								fmt.Println(p)
@@ -192,8 +143,8 @@ func main() {
 		},
 	}
 
-	err := app.Run(os.Args)
+	err := app.Run(context.Background(), os.Args)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("gofind failed")
 	}
 }

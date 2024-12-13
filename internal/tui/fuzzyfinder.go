@@ -8,18 +8,14 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/hay-kot/gofind/gofind"
-	"github.com/hay-kot/gofind/ui"
+	"github.com/hay-kot/gofind/internal/gofind"
+	"github.com/hay-kot/gofind/internal/ui"
 	"github.com/sahilm/fuzzy"
 )
 
-var (
-	NoResults = errors.New("no results")
-)
+var NoResults = errors.New("no results")
 
 func FuzzyFinder(matches []gofind.Match) (string, error) {
-	setup()
-
 	ctrl := fuzzyFinderController{
 		matches:      matches,
 		selected:     0,
@@ -33,7 +29,7 @@ func FuzzyFinder(matches []gofind.Match) (string, error) {
 		tea.WithOutput(os.Stderr),
 	)
 
-	err := p.Start()
+	_, err := p.Run()
 
 	selected := ctrl.Selected()
 

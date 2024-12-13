@@ -5,7 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hay-kot/yal"
+	"github.com/hay-kot/gofind/internal/core/config"
+	"github.com/rs/zerolog/log"
 )
 
 func ParsePath(p string) string {
@@ -20,7 +21,7 @@ func ParsePath(p string) string {
 
 type GoFind struct {
 	Verbose bool
-	Conf    Config
+	Conf    *config.Config
 }
 
 func (gf *GoFind) CacheAll() error {
@@ -28,30 +29,25 @@ func (gf *GoFind) CacheAll() error {
 
 	for key, entry := range gf.Conf.Commands {
 		matches := gf.SearchFor(entry)
-		cache.Set(key, matches)
-		yal.Infof("Cached %v results for %s", len(matches), key)
+		_, err := cache.Set(key, matches)
+		if err != nil {
+			return err
+		}
+		log.Info().Str("key", key).Int("matches", len(matches)).Msg("cached results")
 	}
 	return nil
 }
 
 func (gf *GoFind) Run(entry string) ([]Match, error) {
-	useDefault := false
-
+	cmd := entry
 	if entry == "" {
-		yal.Debug("no arguments provided using default argument")
-		useDefault = true
-	}
-
-	cmd := gf.Conf.Default
-
-	if !useDefault {
-		cmd = entry
+		log.Debug().Msg("no arguments provided using default")
+		cmd = gf.Conf.Default
 	}
 
 	// Preload cache if exists
 	cache := NewCache(gf.Conf.CacheDir)
 	cached, err := cache.Find(cmd)
-
 	if err != nil {
 		if err == ErrCacheNotFound {
 			matches := gf.SearchFor(gf.Conf.Commands[cmd])
@@ -64,7 +60,7 @@ func (gf *GoFind) Run(entry string) ([]Match, error) {
 	return cached.Matches, nil
 }
 
-func (gf *GoFind) SearchFor(search SearchEntry) []Match {
+func (gf *GoFind) SearchFor(search config.SearchEntry) []Match {
 	var matches []Match
 
 	paths := make([]string, len(search.Roots))
@@ -73,15 +69,15 @@ func (gf *GoFind) SearchFor(search SearchEntry) []Match {
 	}
 
 	finder := Finder{
-		MaxRecursion: 5,
+		MaxRecursion: gf.Conf.MaxRecursion,
 		Ignore:       gf.Conf.Ignore,
 	}
 
-	var results = Must(finder.Find(paths, search.MatchStr))
+	results := Must(finder.Find(paths, search.MatchStr))
 
 	if len(results) == 0 {
-		yal.Warnf("no results found for path %s", search.Roots)
-		yal.Debugf("gf.SearchFor(Root=%s, MatchStr=%s) returned no results", search.Roots, search.MatchStr)
+		log.Warn().Strs("path", search.Roots).Msg("no results found")
+		log.Debug().Msgf("gf.SearchFor(Root=%s, MatchStr=%s) returned no results", search.Roots, search.MatchStr)
 		return matches
 	}
 
