@@ -16,8 +16,6 @@ import (
 var NoResults = errors.New("no results")
 
 func FuzzyFinder(matches []gofind.Match) (string, error) {
-	setup()
-
 	ctrl := fuzzyFinderController{
 		matches:      matches,
 		selected:     0,
