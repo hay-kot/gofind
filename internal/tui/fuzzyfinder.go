@@ -54,6 +54,10 @@ type fuzzyFinderController struct {
 // Selected returns the active selection by the user, or any empty object
 // if no selection has been made OR the active index is out of range.
 func (c *fuzzyFinderController) Selected() gofind.Match {
+	if c.selected == -1 {
+		return gofind.Match{}
+	}
+
 	if c.indexmap == nil {
 		if c.selected < 0 || c.selected >= len(c.matches) {
 			return gofind.Match{}
@@ -133,6 +137,7 @@ func (m fuzzyFinderView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
+			m.ctrl.selected = -1
 			return m, tea.Quit
 		case tea.KeyEnter:
 			return m, tea.Quit
