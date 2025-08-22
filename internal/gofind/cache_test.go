@@ -9,13 +9,7 @@ import (
 )
 
 func TestNewCache(t *testing.T) {
-	// Create a temporary directory for testing
-	tmpDir, err := os.MkdirTemp("", "gofind-cache-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
+	tmpDir := t.TempDir()
 	testDir := filepath.Join(tmpDir, "test-cache")
 
 	cache, err := NewCache(testDir)
@@ -45,12 +39,7 @@ func TestNewCacheWithTildePath(t *testing.T) {
 }
 
 func TestCachePathConstructor(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "gofind-path-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
+	tmpDir := t.TempDir()
 	cache := Cache{Dir: tmpDir}
 
 	tests := []struct {
@@ -86,13 +75,7 @@ func TestCachePathConstructor(t *testing.T) {
 }
 
 func TestCacheSetAndFind(t *testing.T) {
-	// Create temporary directory
-	tmpDir, err := os.MkdirTemp("", "gofind-set-find-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
+	tmpDir := t.TempDir()
 	cache, err := NewCache(tmpDir)
 	if err != nil {
 		t.Fatalf("NewCache failed: %v", err)
@@ -158,12 +141,7 @@ func TestCacheSetAndFind(t *testing.T) {
 }
 
 func TestCacheFindNotFound(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "gofind-notfound-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
+	tmpDir := t.TempDir()
 	cache, err := NewCache(tmpDir)
 	if err != nil {
 		t.Fatalf("NewCache failed: %v", err)
@@ -219,11 +197,7 @@ func TestCacheEntryExpiration(t *testing.T) {
 }
 
 func TestCacheFindExpiredEntry(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "gofind-expired-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Create an expired cache entry manually
 	expiredEntry := CacheEntry{
@@ -240,10 +214,10 @@ func TestCacheFindExpiredEntry(t *testing.T) {
 	encoder := json.NewEncoder(file)
 	err = encoder.Encode(expiredEntry)
 	if err != nil {
-		file.Close()
+		_ = file.Close()
 		t.Fatalf("Failed to encode expired entry: %v", err)
 	}
-	file.Close()
+	_ = file.Close()
 
 	cache := Cache{Dir: tmpDir}
 	
@@ -259,11 +233,7 @@ func TestCacheFindExpiredEntry(t *testing.T) {
 }
 
 func TestCacheSetCreatesDirs(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "gofind-mkdir-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Use nested path that doesn't exist
 	nestedCacheDir := filepath.Join(tmpDir, "nested", "cache", "dir")
@@ -271,7 +241,7 @@ func TestCacheSetCreatesDirs(t *testing.T) {
 
 	matches := []Match{{Name: "test", Path: "/test"}}
 	
-	_, err = cache.Set("test", matches)
+	_, err := cache.Set("test", matches)
 	if err != nil {
 		t.Fatalf("Set failed: %v", err)
 	}
