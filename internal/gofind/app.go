@@ -10,14 +10,17 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func ParsePath(p string) string {
+func ParsePath(p string) (string, error) {
 	// Check if path starts with ~ if it does, replace it with the user's home directory
 	if strings.HasPrefix(p, "~") {
-		homedir := Must(os.UserHomeDir())
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
 		p = filepath.Join(homedir, strings.TrimPrefix(p, "~"))
 	}
 
-	return p
+	return p, nil
 }
 
 type GoFind struct {
@@ -26,7 +29,10 @@ type GoFind struct {
 }
 
 func (gf *GoFind) CacheAll() error {
-	cache := NewCache(gf.Conf.CacheDir)
+	cache, err := NewCache(gf.Conf.CacheDir)
+	if err != nil {
+		return err
+	}
 
 	for key, entry := range gf.Conf.Commands {
 		matches := gf.SearchFor(entry)
@@ -47,7 +53,10 @@ func (gf *GoFind) Run(entry string) ([]Match, error) {
 	}
 
 	// Preload cache if exists
-	cache := NewCache(gf.Conf.CacheDir)
+	cache, err := NewCache(gf.Conf.CacheDir)
+	if err != nil {
+		return []Match{}, err
+	}
 	cached, err := cache.Find(cmd)
 	if err != nil {
 		if err == ErrCacheNotFound {
@@ -64,17 +73,25 @@ func (gf *GoFind) Run(entry string) ([]Match, error) {
 func (gf *GoFind) SearchFor(search config.SearchEntry) []Match {
 	var matches []Match
 
-	paths := make([]string, len(search.Roots))
-	for i, root := range search.Roots {
-		paths[i] = ParsePath(root)
+	paths := make([]string, 0, len(search.Roots))
+	for _, root := range search.Roots {
+		parsedPath, err := ParsePath(root)
+		if err != nil {
+			log.Warn().Err(err).Str("root", root).Msg("failed to parse path")
+			continue
+		}
+		paths = append(paths, parsedPath)
 	}
 
 	finder := Finder{
-		MaxRecursion: gf.Conf.MaxRecursion,
-		Ignore:       gf.Conf.Ignore,
+		Ignore: gf.Conf.Ignore,
 	}
 
-	results := Must(finder.Find(paths, search.MatchStr))
+	results, err := finder.Find(paths, search.MatchStr)
+	if err != nil {
+		log.Warn().Err(err).Msg("finder.Find failed")
+		return matches
+	}
 
 	if len(results) == 0 {
 		log.Warn().Strs("path", search.Roots).Msg("no results found")

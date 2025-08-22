@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/rs/zerolog/log"
 )
 
 var ErrCacheNotFound = errors.New("cache not found")
@@ -17,32 +15,40 @@ type Cache struct {
 	Dir string
 }
 
-func (ce Cache) PathConstructor(namespace string) string {
-	root := ParsePath(ce.Dir)
+func (ce Cache) PathConstructor(namespace string) (string, error) {
+	root, err := ParsePath(ce.Dir)
+	if err != nil {
+		return "", err
+	}
 
-	return filepath.Join(root, fmt.Sprintf("%s.json", namespace))
+	return filepath.Join(root, fmt.Sprintf("%s.json", namespace)), nil
 }
 
-func NewCache(dir string) Cache {
-	p := ParsePath(dir)
+func NewCache(dir string) (Cache, error) {
+	p, err := ParsePath(dir)
+	if err != nil {
+		return Cache{}, err
+	}
 
 	// Create directory if it doesn't exist
 	if _, err := os.Stat(p); os.IsNotExist(err) {
-		err := os.MkdirAll(p, 0755)
-		if err != nil {
-			log.Fatal().Err(err).Msgf("os.MkdirAll(p=%s) failed with error '%s'", p, err.Error())
+		if err := os.MkdirAll(p, 0755); err != nil {
+			return Cache{}, fmt.Errorf("failed to create cache directory %s: %w", p, err)
 		}
 	}
 
 	return Cache{
 		Dir: dir,
-	}
+	}, nil
 }
 
 // Find will find the first match in the cache or return an error if the cache
 // isn't found.
 func (c Cache) Find(namespace string) (*CacheEntry, error) {
-	cachePath := c.PathConstructor(namespace)
+	cachePath, err := c.PathConstructor(namespace)
+	if err != nil {
+		return nil, err
+	}
 
 	// Check if file exists
 	if _, err := os.Stat(cachePath); os.IsNotExist(err) {
@@ -50,11 +56,33 @@ func (c Cache) Find(namespace string) (*CacheEntry, error) {
 	}
 
 	// Load cache
-	return nil, ErrCacheNotFound
+	file, err := os.Open(cachePath)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = file.Close() // Ignore close errors for read-only operations
+	}()
+
+	var entry CacheEntry
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&entry); err != nil {
+		return nil, err
+	}
+
+	// Check if cache is expired
+	if entry.IsExpired() {
+		return nil, ErrCacheNotFound
+	}
+
+	return &entry, nil
 }
 
 func (c Cache) Set(namespace string, results []Match) (*CacheEntry, error) {
-	p := c.PathConstructor(namespace)
+	p, err := c.PathConstructor(namespace)
+	if err != nil {
+		return nil, err
+	}
 
 	entry := CacheEntry{
 		Matches: results,
@@ -62,12 +90,19 @@ func (c Cache) Set(namespace string, results []Match) (*CacheEntry, error) {
 	}
 
 	// Create Parent
-	err := os.MkdirAll(filepath.Dir(p), 0755)
+	err = os.MkdirAll(filepath.Dir(p), 0755)
 	if err != nil {
 		return nil, err
 	}
 
-	file := Must(os.Create(p))
+	file, err := os.Create(p)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = file.Close() // Ignore close errors for read-only operations
+	}()
+
 	encoder := json.NewEncoder(file)
 	err = encoder.Encode(entry)
 	if err != nil {

@@ -1,0 +1,33 @@
+version: 2
+
+run:
+  go: "1.25"
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - bodyclose
+    - dupl
+    - dogsled
+    - misspell
+    - unconvert
+    - unparam
+
+linters-settings:
+  cyclop:
+    max-complexity: 20
+  
+  dupl:
+    threshold: 100
+    
+  misspell:
+    locale: US
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
