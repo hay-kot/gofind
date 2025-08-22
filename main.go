@@ -34,6 +34,17 @@ func main() {
 		Version: "0.3.0",
 		Name:    "gofind",
 		Usage:   "an interactive search for directories using the filepath.Match function",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "config",
+				Usage:       "specify configuration path",
+				Sources:     cli.EnvVars("GOFIND_CONFIG"),
+				Required:    false,
+				Value:       "",
+				DefaultText: config.XDGConfigPath(""),
+				Aliases:     []string{"c"},
+			},
+		},
 		Commands: []*cli.Command{
 			{
 				Name:  "cache",
@@ -45,7 +56,7 @@ func main() {
 					},
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
-					cfg, err := config.ReadFile(config.XDGConfigPath())
+					cfg, err := config.ReadFile(config.XDGConfigPath(c.String("config")))
 					if err != nil {
 						return err
 					}
@@ -70,7 +81,7 @@ func main() {
 				Usage:     "run interactive finder for entry",
 				UsageText: "gofind find [config-entry string] e.g. `gofind find repos`",
 				Action: func(ctx context.Context, c *cli.Command) error {
-					cfg, err := config.ReadFile(config.XDGConfigPath())
+					cfg, err := config.ReadFile(config.XDGConfigPath(c.String("config")))
 					if err != nil {
 						return err
 					}
@@ -106,12 +117,11 @@ func main() {
 							},
 						},
 						Action: func(ctx context.Context, c *cli.Command) error {
-							cfg, err := config.ReadFile(config.XDGConfigPath())
+							p := config.XDGConfigPath(c.String("config"))
+							cfg, err := config.ReadFile(p)
 							if err != nil {
 								return err
 							}
-
-							p := config.XDGConfigPath()
 
 							if c.Bool("path") {
 								fmt.Println(p)

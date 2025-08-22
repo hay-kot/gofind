@@ -13,7 +13,7 @@ import (
 	"github.com/sahilm/fuzzy"
 )
 
-var NoResults = errors.New("no results")
+var ErrNoResults = errors.New("no results")
 
 func FuzzyFinder(matches []gofind.Match) (string, error) {
 	ctrl := fuzzyFinderController{
@@ -34,7 +34,7 @@ func FuzzyFinder(matches []gofind.Match) (string, error) {
 	selected := ctrl.Selected()
 
 	if selected.Name == "" {
-		return "", NoResults
+		return "", ErrNoResults
 	}
 
 	return selected.Path, err
@@ -174,13 +174,9 @@ func (m fuzzyFinderView) View() string {
 	// Calculate the number of allowed_rows we can display
 	m.ctrl.limit = m.height - 3
 
-	var determinedMax int
-	if m.ctrl.limit < 0 {
-		determinedMax = len(results)
-	} else if len(results) > m.ctrl.limit {
-		determinedMax = m.ctrl.limit
-	} else {
-		determinedMax = len(results)
+	determinedMax := len(results)
+	if m.ctrl.limit >= 0 {
+		determinedMax = min(m.ctrl.limit, len(results))
 	}
 
 	m.ctrl.limit = determinedMax

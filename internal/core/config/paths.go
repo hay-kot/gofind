@@ -7,10 +7,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const AppName = "gofind"
-const ConfigFile = AppName + ".json"
+const (
+	AppName    = "gofind"
+	ConfigFile = AppName + ".json"
+)
 
-func XDGConfigPath() string {
+func XDGConfigPath(override string) string {
+	if override != "" {
+		return override
+	}
+
 	configDir := os.Getenv("XDG_CONFIG_HOME")
 	if configDir == "" {
 		home, err := os.UserHomeDir()
