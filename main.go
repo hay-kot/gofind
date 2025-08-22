@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 	"time"
 
@@ -44,6 +46,49 @@ func main() {
 				DefaultText: config.XDGConfigPath(""),
 				Aliases:     []string{"c"},
 			},
+			&cli.StringFlag{
+				Name:   "cpuprofile",
+				Usage:  "write cpu profile to file",
+				Hidden: true,
+			},
+			&cli.StringFlag{
+				Name:   "memprofile",
+				Usage:  "write memory profile to file",
+				Hidden: true,
+			},
+		},
+		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
+			if cpuprofile := c.String("cpuprofile"); cpuprofile != "" {
+				f, err := os.Create(cpuprofile)
+				if err != nil {
+					return ctx, fmt.Errorf("could not create CPU profile: %w", err)
+				}
+				if err := pprof.StartCPUProfile(f); err != nil {
+					_ = f.Close()
+					return ctx, fmt.Errorf("could not start CPU profile: %w", err)
+				}
+				c.Metadata["cpuprofile_file"] = f
+			}
+			return ctx, nil
+		},
+		After: func(ctx context.Context, c *cli.Command) error {
+			if f, ok := c.Metadata["cpuprofile_file"].(*os.File); ok {
+				pprof.StopCPUProfile()
+				_ = f.Close()
+			}
+
+			if memprofile := c.String("memprofile"); memprofile != "" {
+				f, err := os.Create(memprofile)
+				if err != nil {
+					return fmt.Errorf("could not create memory profile: %w", err)
+				}
+				defer func() { _ = f.Close() }()
+				runtime.GC()
+				if err := pprof.WriteHeapProfile(f); err != nil {
+					return fmt.Errorf("could not write memory profile: %w", err)
+				}
+			}
+			return nil
 		},
 		Commands: []*cli.Command{
 			{
