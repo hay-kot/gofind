@@ -13,7 +13,7 @@ import (
 	"github.com/sahilm/fuzzy"
 )
 
-var NoResults = errors.New("no results")
+var ErrNoResults = errors.New("no results")
 
 func FuzzyFinder(matches []gofind.Match) (string, error) {
 	ctrl := fuzzyFinderController{
@@ -34,7 +34,7 @@ func FuzzyFinder(matches []gofind.Match) (string, error) {
 	selected := ctrl.Selected()
 
 	if selected.Name == "" {
-		return "", NoResults
+		return "", ErrNoResults
 	}
 
 	return selected.Path, err
@@ -141,6 +141,8 @@ func (m fuzzyFinderView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case tea.KeyEnter:
 			return m, tea.Quit
+		default:
+			// Handle other key types
 		}
 
 		switch msg.String() {
@@ -174,13 +176,9 @@ func (m fuzzyFinderView) View() string {
 	// Calculate the number of allowed_rows we can display
 	m.ctrl.limit = m.height - 3
 
-	var determinedMax int
-	if m.ctrl.limit < 0 {
-		determinedMax = len(results)
-	} else if len(results) > m.ctrl.limit {
-		determinedMax = m.ctrl.limit
-	} else {
-		determinedMax = len(results)
+	determinedMax := len(results)
+	if m.ctrl.limit >= 0 {
+		determinedMax = min(m.ctrl.limit, len(results))
 	}
 
 	m.ctrl.limit = determinedMax
@@ -215,11 +213,9 @@ func (m fuzzyFinderView) fmtMatches(repos []gofind.Match) string {
 		if m.ctrl.selected == i {
 			prefix = ui.HighlightRow(ui.AccentRed(">"))
 			text = ui.HighlightRow(ui.Bold(text))
-		} else {
-			if search != "" && strings.Contains(repo.Name, search) {
-				// Highlight the search term
-				text = strings.ReplaceAll(text, search, ui.Bold(search))
-			}
+		} else if search != "" && strings.Contains(repo.Name, search) {
+			// Highlight the search term
+			text = strings.ReplaceAll(text, search, ui.Bold(search))
 		}
 
 		str.WriteString(prefix + text + "\n")

@@ -11,9 +11,7 @@ import (
 )
 
 type Finder struct {
-	MaxRecursion     int
-	CurrentRecursion int
-	Ignore           []string
+	Ignore []string
 }
 
 type Match struct {
@@ -30,19 +28,41 @@ func (fdr *Finder) DirWalker(channel chan string, root string, pattern string) {
 		}
 	}
 
-	// Early termination for the current directory
+	// Check for matches and ignored directories
+	var foundMatch bool
 	for _, dir := range dirs {
+		// Check if directory should be ignored
+		shouldIgnore := false
 		for _, ignore := range fdr.Ignore {
-			if Must(filepath.Match(ignore, dir.Name())) {
-				return
+			matched, err := filepath.Match(ignore, dir.Name())
+			if err != nil {
+				log.Warn().Err(err).Str("pattern", ignore).Str("dir", dir.Name()).Msg("invalid ignore pattern")
+				continue
 			}
+			if matched {
+				shouldIgnore = true
+				break
+			}
+		}
+		if shouldIgnore {
+			continue
 		}
 
 		// Match the pattern
-		if Must(filepath.Match(pattern, dir.Name())) {
-			channel <- filepath.Join(root, dir.Name())
-			return
+		matched, err := filepath.Match(pattern, dir.Name())
+		if err != nil {
+			log.Warn().Err(err).Str("pattern", pattern).Str("dir", dir.Name()).Msg("invalid match pattern")
+			continue
 		}
+		if matched {
+			channel <- filepath.Join(root, dir.Name())
+			foundMatch = true
+		}
+	}
+
+	// If we found a match, don't recurse deeper
+	if foundMatch {
+		return
 	}
 
 	// Use a buffered channel as a semaphore to limit goroutines

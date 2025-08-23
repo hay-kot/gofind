@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 	"time"
 
@@ -34,6 +36,60 @@ func main() {
 		Version: "0.3.0",
 		Name:    "gofind",
 		Usage:   "an interactive search for directories using the filepath.Match function",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "config",
+				Usage:       "specify configuration path",
+				Sources:     cli.EnvVars("GOFIND_CONFIG"),
+				Required:    false,
+				Value:       "",
+				DefaultText: config.XDGConfigPath(""),
+				Aliases:     []string{"c"},
+			},
+			&cli.StringFlag{
+				Name:   "cpuprofile",
+				Usage:  "write cpu profile to file",
+				Hidden: true,
+			},
+			&cli.StringFlag{
+				Name:   "memprofile",
+				Usage:  "write memory profile to file",
+				Hidden: true,
+			},
+		},
+		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
+			if cpuprofile := c.String("cpuprofile"); cpuprofile != "" {
+				f, err := os.Create(cpuprofile)
+				if err != nil {
+					return ctx, fmt.Errorf("could not create CPU profile: %w", err)
+				}
+				if err := pprof.StartCPUProfile(f); err != nil {
+					_ = f.Close()
+					return ctx, fmt.Errorf("could not start CPU profile: %w", err)
+				}
+				c.Metadata["cpuprofile_file"] = f
+			}
+			return ctx, nil
+		},
+		After: func(ctx context.Context, c *cli.Command) error {
+			if f, ok := c.Metadata["cpuprofile_file"].(*os.File); ok {
+				pprof.StopCPUProfile()
+				_ = f.Close()
+			}
+
+			if memprofile := c.String("memprofile"); memprofile != "" {
+				f, err := os.Create(memprofile)
+				if err != nil {
+					return fmt.Errorf("could not create memory profile: %w", err)
+				}
+				defer func() { _ = f.Close() }()
+				runtime.GC()
+				if err := pprof.WriteHeapProfile(f); err != nil {
+					return fmt.Errorf("could not write memory profile: %w", err)
+				}
+			}
+			return nil
+		},
 		Commands: []*cli.Command{
 			{
 				Name:  "cache",
@@ -45,7 +101,7 @@ func main() {
 					},
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
-					cfg, err := config.ReadFile(config.XDGConfigPath())
+					cfg, err := config.ReadFile(config.XDGConfigPath(c.String("config")))
 					if err != nil {
 						return err
 					}
@@ -70,7 +126,7 @@ func main() {
 				Usage:     "run interactive finder for entry",
 				UsageText: "gofind find [config-entry string] e.g. `gofind find repos`",
 				Action: func(ctx context.Context, c *cli.Command) error {
-					cfg, err := config.ReadFile(config.XDGConfigPath())
+					cfg, err := config.ReadFile(config.XDGConfigPath(c.String("config")))
 					if err != nil {
 						return err
 					}
@@ -106,12 +162,11 @@ func main() {
 							},
 						},
 						Action: func(ctx context.Context, c *cli.Command) error {
-							cfg, err := config.ReadFile(config.XDGConfigPath())
+							p := config.XDGConfigPath(c.String("config"))
+							cfg, err := config.ReadFile(p)
 							if err != nil {
 								return err
 							}
-
-							p := config.XDGConfigPath()
 
 							if c.Bool("path") {
 								fmt.Println(p)

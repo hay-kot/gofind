@@ -70,7 +70,7 @@ func WriteFile(path string, cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	return Write(file, cfg)
 }
