@@ -1,6 +1,7 @@
 package gofind
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -59,7 +60,7 @@ func (gf *GoFind) Run(entry string) ([]Match, error) {
 	}
 	cached, err := cache.Find(cmd)
 	if err != nil {
-		if err == ErrCacheNotFound {
+		if errors.Is(err, ErrCacheNotFound) {
 			matches := gf.SearchFor(gf.Conf.Commands[cmd])
 			cached, _ = cache.Set(cmd, matches)
 		} else {

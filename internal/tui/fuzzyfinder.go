@@ -141,6 +141,8 @@ func (m fuzzyFinderView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case tea.KeyEnter:
 			return m, tea.Quit
+		default:
+			// Handle other key types
 		}
 
 		switch msg.String() {
@@ -211,11 +213,9 @@ func (m fuzzyFinderView) fmtMatches(repos []gofind.Match) string {
 		if m.ctrl.selected == i {
 			prefix = ui.HighlightRow(ui.AccentRed(">"))
 			text = ui.HighlightRow(ui.Bold(text))
-		} else {
-			if search != "" && strings.Contains(repo.Name, search) {
-				// Highlight the search term
-				text = strings.ReplaceAll(text, search, ui.Bold(search))
-			}
+		} else if search != "" && strings.Contains(repo.Name, search) {
+			// Highlight the search term
+			text = strings.ReplaceAll(text, search, ui.Bold(search))
 		}
 
 		str.WriteString(prefix + text + "\n")

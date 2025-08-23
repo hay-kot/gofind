@@ -32,7 +32,7 @@ func NewCache(dir string) (Cache, error) {
 
 	// Create directory if it doesn't exist
 	if _, err := os.Stat(p); os.IsNotExist(err) {
-		if err := os.MkdirAll(p, 0755); err != nil {
+		if err := os.MkdirAll(p, 0o755); err != nil {
 			return Cache{}, fmt.Errorf("failed to create cache directory %s: %w", p, err)
 		}
 	}
@@ -90,7 +90,7 @@ func (c Cache) Set(namespace string, results []Match) (*CacheEntry, error) {
 	}
 
 	// Create Parent
-	err = os.MkdirAll(filepath.Dir(p), 0755)
+	err = os.MkdirAll(filepath.Dir(p), 0o755)
 	if err != nil {
 		return nil, err
 	}
