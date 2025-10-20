@@ -13,7 +13,7 @@ tasks:
   build:
     desc: Builds the backend binary
     cmds:
-      - goreleaser build --snapshot --rm-dist
+      - goreleaser build --snapshot --clean
 
   test:
     desc: Runs all go tests using gotestsum - supports passing gotestsum args
@@ -42,9 +42,9 @@ tasks:
       - golangci-lint run ./...
 
   fmt:
-    desc: Runs golangci-lint
+    desc: Formats code with golangci-lint
     cmds:
-      - golangci-lint fmt
+      - golangci-lint run --fix
 
   pr:
     desc: Runs all go test and lint related tasks for PRs

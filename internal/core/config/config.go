@@ -7,12 +7,31 @@ import (
 	"os"
 )
 
+type Theme struct {
+	Prompt              string `json:"prompt"`
+	SelectedIndicator   string `json:"selected_indicator"`
+	SecondaryText       string `json:"secondary_text"`
+	PrimaryText         string `json:"primary_text"`
+	SelectionBackground string `json:"selection_background"`
+}
+
 type Config struct {
 	Default      string                 `json:"default"`
 	Commands     map[string]SearchEntry `json:"commands"`
 	CacheDir     string                 `json:"cache"`
 	Ignore       []string               `json:"ignore"`
 	MaxRecursion int                    `json:"max_recursion"`
+	Theme        Theme                  `json:"theme,omitzero"`
+}
+
+func DefaultTheme() Theme {
+	return Theme{
+		Prompt:              "#255F85",
+		SelectedIndicator:   "#DA4167",
+		SecondaryText:       "#848484",
+		PrimaryText:         "#FFFFFF",
+		SelectionBackground: "#2D2F27",
+	}
 }
 
 func Default() *Config {
@@ -22,6 +41,7 @@ func Default() *Config {
 		CacheDir:     XDGCachePath(),
 		Ignore:       []string{},
 		MaxRecursion: 10,
+		Theme:        DefaultTheme(),
 	}
 }
 

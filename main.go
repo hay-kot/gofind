@@ -33,7 +33,7 @@ func main() {
 		Level(zerolog.WarnLevel)
 
 	app := &cli.Command{
-		Version: "0.3.0",
+		Version: "0.4.0",
 		Name:    "gofind",
 		Usage:   "an interactive search for directories using the filepath.Match function",
 		Flags: []cli.Flag{
@@ -131,6 +131,9 @@ func main() {
 						return err
 					}
 
+					// Initialize theme from config
+					ui.Init(cfg.Theme)
+
 					finder := gofind.GoFind{Conf: cfg}
 
 					entry := c.Args().Get(0)
@@ -172,6 +175,9 @@ func main() {
 								fmt.Println(p)
 								return nil
 							}
+
+							// Initialize theme from config
+							ui.Init(cfg.Theme)
 
 							str := strings.Builder{}
 
