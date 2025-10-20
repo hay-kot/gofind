@@ -20,6 +20,22 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+var (
+	// Build information. Populated at build-time via -ldflags flag.
+	version = "dev"
+	commit  = "HEAD"
+	date    = "now"
+)
+
+func build() string {
+	short := commit
+	if len(commit) > 7 {
+		short = commit[:7]
+	}
+
+	return fmt.Sprintf("%s (%s) %s", version, short, date)
+}
+
 func main() {
 	// Sets colors so they show up in stderr:
 	//
@@ -33,7 +49,7 @@ func main() {
 		Level(zerolog.WarnLevel)
 
 	app := &cli.Command{
-		Version: "0.4.0",
+		Version: build(),
 		Name:    "gofind",
 		Usage:   "an interactive search for directories using the filepath.Match function",
 		Flags: []cli.Flag{
