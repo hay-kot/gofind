@@ -1,0 +1,48 @@
+[tools]
+go = "latest"
+golangci-lint = "latest"
+goreleaser = "latest"
+"github:gotestyourself/gotestsum" = "latest"
+
+[env]
+LOG_LEVEL = "debug"
+
+[tasks.run]
+description = "Run the main application"
+run = "go run ."
+
+[tasks.build]
+description = "Build the binary with goreleaser"
+run = "goreleaser build --snapshot --clean"
+
+[tasks.test]
+description = "Run all go tests using gotestsum"
+run = "gotestsum ./..."
+
+[tasks."test:watch"]
+description = "Run all go tests in watch mode"
+run = "gotestsum --watch -- -v ./..."
+
+[tasks.coverage]
+description = "Run tests with race detection and coverage"
+run = "go test -race -coverprofile=coverage.out -covermode=atomic ./... -v -cover"
+
+[tasks.tidy]
+description = "Run go mod tidy"
+run = "go mod tidy"
+
+[tasks.lint]
+description = "Run golangci-lint"
+run = "golangci-lint run ./..."
+
+[tasks.fmt]
+description = "Run golangci-lint fmt"
+run = "golangci-lint fmt"
+
+[tasks.check]
+description = "Run all checks for PRs (tidy, lint, test)"
+run = [
+    { task = "tidy" },
+    { task = "lint" },
+    { task = "test" },
+]

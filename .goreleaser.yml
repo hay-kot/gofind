@@ -15,7 +15,10 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm
       - arm64
+    goarm:
+      - "7"
     mod_timestamp: "{{ .CommitTimestamp }}"
     flags:
       - -trimpath
@@ -26,7 +29,8 @@ builds:
       - -X main.date={{.Date}}
 
 archives:
-  - name_template: >-
+  - formats: [tar.gz]
+    name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
@@ -35,6 +39,7 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     format_overrides:
       - goos: windows
+        formats: [zip]
 
 checksum:
   name_template: "checksums.txt"
@@ -44,9 +49,20 @@ snapshot:
 
 changelog:
   sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(\w+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\(\w+\))??!?:.+$'
+      order: 1
+    - title: Documentation
+      regexp: '^.*?docs(\(\w+\))??!?:.+$'
+      order: 2
+    - title: Other
+      order: 999
   filters:
     exclude:
-      - "^docs:"
       - "^test:"
       - "^chore:"
       - "^ci:"
