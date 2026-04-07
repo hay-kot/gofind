@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/hay-kot/gofind/internal/core/config"
+	"github.com/hay-kot/gofind/internal/config"
 	"github.com/rs/zerolog/log"
 )
 

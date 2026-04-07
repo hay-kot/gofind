@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
+
+	"github.com/hay-kot/gofind/internal/paths"
 )
 
 type Theme struct {
@@ -38,7 +41,7 @@ func Default() *Config {
 	return &Config{
 		Default:      "",
 		Commands:     make(map[string]SearchEntry),
-		CacheDir:     XDGCachePath(),
+		CacheDir:     filepath.Join(paths.DataDir(), "cache"),
 		Ignore:       []string{},
 		MaxRecursion: 10,
 		Theme:        DefaultTheme(),
@@ -58,6 +61,28 @@ func IgnorePatterns() []string {
 type SearchEntry struct {
 	Roots    []string `json:"roots"`
 	MatchStr string   `json:"match"`
+}
+
+// XDGConfigPath resolves the config file path.
+// Returns override if non-empty, otherwise returns ConfigDir()/gofind.json.
+func XDGConfigPath(override string) string {
+	if override != "" {
+		return override
+	}
+	return filepath.Join(paths.ConfigDir(), "gofind.json")
+}
+
+// ReadFileOrDefault reads config from path, returning Default() if the file
+// does not exist. Used in Before hooks where a missing config is acceptable.
+func ReadFileOrDefault(path string) (*Config, error) {
+	cfg, err := ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return Default(), nil
+		}
+		return nil, err
+	}
+	return cfg, nil
 }
 
 func Read(r io.Reader) (*Config, error) {

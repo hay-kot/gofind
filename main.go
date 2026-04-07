@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/hay-kot/gofind/internal/core/config"
+	"github.com/hay-kot/gofind/internal/config"
 	"github.com/hay-kot/gofind/internal/gofind"
 	"github.com/hay-kot/gofind/internal/tui"
 	"github.com/hay-kot/gofind/internal/ui"
