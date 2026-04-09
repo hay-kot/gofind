@@ -15,7 +15,6 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/hay-kot/gofind/internal/commands"
-	"github.com/hay-kot/gofind/internal/config"
 	"github.com/hay-kot/gofind/internal/paths"
 )
 
@@ -49,10 +48,12 @@ func build() string {
 	return fmt.Sprintf("%s (%s) %s", version, short, date)
 }
 
-func setupLogger(level string, logFile string, noColor bool) error {
+// setupLogger configures the global zerolog logger. Returns a closer that
+// must be called when the process exits to flush and close any log file.
+func setupLogger(level string, logFile string, noColor bool) (func(), error) {
 	parsedLevel, err := zerolog.ParseLevel(level)
 	if err != nil {
-		return fmt.Errorf("failed to parse log level: %w", err)
+		return func() {}, fmt.Errorf("failed to parse log level: %w", err)
 	}
 
 	var output io.Writer = zerolog.ConsoleWriter{Out: os.Stderr, NoColor: noColor}
@@ -60,23 +61,25 @@ func setupLogger(level string, logFile string, noColor bool) error {
 	if logFile != "" {
 		logDir := filepath.Dir(logFile)
 		if err := os.MkdirAll(logDir, 0o755); err != nil {
-			return fmt.Errorf("failed to create log directory: %w", err)
+			return func() {}, fmt.Errorf("failed to create log directory: %w", err)
 		}
 
 		file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 		if err != nil {
-			return fmt.Errorf("failed to open log file: %w", err)
+			return func() {}, fmt.Errorf("failed to open log file: %w", err)
 		}
 
 		output = io.MultiWriter(
 			zerolog.ConsoleWriter{Out: os.Stderr, NoColor: noColor},
 			file,
 		)
+
+		log.Logger = log.Output(output).Level(parsedLevel)
+		return func() { _ = file.Close() }, nil
 	}
 
 	log.Logger = log.Output(output).Level(parsedLevel)
-
-	return nil
+	return func() {}, nil
 }
 
 func main() {
@@ -84,9 +87,19 @@ func main() {
 }
 
 func run() int {
+	// Default logger for any output before setupLogger is called in Before.
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
+	var (
+		logLevel string
+		noColor  bool
+		logFile  string
+	)
 	flags := &commands.Flags{}
+
+	// logCloser is assigned by the Before hook once setupLogger succeeds.
+	logCloser := func() {}
+	defer func() { logCloser() }()
 
 	app := &cli.Command{
 		Name:                  "gofind",
@@ -99,46 +112,42 @@ func run() int {
 				Usage:       "log level (debug, info, warn, error, fatal, panic)",
 				Sources:     cli.EnvVars("LOG_LEVEL"),
 				Value:       "warn",
-				Destination: &flags.LogLevel,
+				Destination: &logLevel,
 			},
 			&cli.BoolFlag{
 				Name:        "no-color",
 				Usage:       "disable colored output",
 				Sources:     cli.EnvVars("NO_COLOR"),
-				Destination: &flags.NoColor,
+				Destination: &noColor,
 			},
 			&cli.StringFlag{
 				Name:        "log-file",
 				Usage:       "path to log file (optional)",
 				Sources:     cli.EnvVars("LOG_FILE"),
-				Destination: &flags.LogFile,
+				Destination: &logFile,
 			},
 			&cli.StringFlag{
 				Name:        "config",
 				Usage:       "specify configuration path",
 				Sources:     cli.EnvVars("GOFIND_CONFIG"),
-				DefaultText: config.XDGConfigPath(""),
+				DefaultText: paths.ConfigPath(""),
 				Aliases:     []string{"c"},
 				Destination: &flags.ConfigFile,
 			},
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
-			logFile := flags.LogFile
-			if logFile == "" {
-				logFile = filepath.Join(paths.DataDir(), "gofind.log")
-			}
-
-			if err := setupLogger(flags.LogLevel, logFile, flags.NoColor); err != nil {
+			closer, err := setupLogger(logLevel, logFile, noColor)
+			if err != nil {
 				return ctx, err
 			}
-
+			logCloser = closer
 			return ctx, nil
 		},
 	}
 
-	app = commands.NewCacheCmd(flags).Register(app)
-	app = commands.NewFindCmd(flags).Register(app)
-	app = commands.NewConfigCmd(flags).Register(app)
+	commands.NewCacheCmd(flags).Register(app)
+	commands.NewFindCmd(flags).Register(app)
+	commands.NewConfigCmd(flags).Register(app)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -147,7 +156,7 @@ func run() int {
 		colorRed := "\033[38;2;215;95;107m"
 		colorGray := "\033[38;2;163;163;163m"
 		colorReset := "\033[0m"
-		if flags.NoColor {
+		if noColor {
 			colorRed = ""
 			colorGray = ""
 			colorReset = ""

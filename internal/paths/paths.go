@@ -7,35 +7,40 @@ import (
 
 const appName = "gofind"
 
-// ConfigDir returns the XDG config directory for the application.
-// Uses $XDG_CONFIG_HOME/<app> or falls back to ~/.config/<app>.
+// ConfigDir returns $XDG_CONFIG_HOME/gofind or ~/.config/gofind.
 func ConfigDir() string {
 	if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
 		return filepath.Join(dir, appName)
 	}
 
-	home, _ := os.UserHomeDir()
+	home, _ := homeDir()
 	return filepath.Join(home, ".config", appName)
 }
 
-// DataDir returns the XDG data directory for the application.
-// Uses $XDG_DATA_HOME/<app> or falls back to ~/.local/share/<app>.
+// ConfigPath resolves the config file path.
+// Returns override if non-empty, otherwise ConfigDir()/gofind.json.
+func ConfigPath(override string) string {
+	if override != "" {
+		return override
+	}
+	return filepath.Join(ConfigDir(), "gofind.json")
+}
+
+// DataDir returns $XDG_DATA_HOME/gofind or ~/.local/share/gofind.
 func DataDir() string {
 	if dir := os.Getenv("XDG_DATA_HOME"); dir != "" {
 		return filepath.Join(dir, appName)
 	}
 
-	home, _ := os.UserHomeDir()
+	home, _ := homeDir()
 	return filepath.Join(home, ".local", "share", appName)
 }
 
-// CacheDir returns the XDG cache directory for the application.
-// Uses $XDG_CACHE_HOME/<app> or falls back to ~/.cache/<app>.
-func CacheDir() string {
-	if dir := os.Getenv("XDG_CACHE_HOME"); dir != "" {
-		return filepath.Join(dir, appName)
+// homeDir returns the user home directory, falling back to "/" on error.
+func homeDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "/", err
 	}
-
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".cache", appName)
+	return home, nil
 }

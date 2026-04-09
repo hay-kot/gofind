@@ -24,7 +24,7 @@ type Config struct {
 	CacheDir     string                 `json:"cache"`
 	Ignore       []string               `json:"ignore"`
 	MaxRecursion int                    `json:"max_recursion"`
-	Theme        Theme                  `json:"theme,omitzero"`
+	Theme        Theme                  `json:"theme,omitempty"`
 }
 
 func DefaultTheme() Theme {
@@ -48,41 +48,9 @@ func Default() *Config {
 	}
 }
 
-// IgnorePatterns are common ignore folders/file patterns that
-// will always be excluded.
-func IgnorePatterns() []string {
-	return []string{
-		"node_modules",
-		".venv",
-		"venv",
-	}
-}
-
 type SearchEntry struct {
 	Roots    []string `json:"roots"`
 	MatchStr string   `json:"match"`
-}
-
-// XDGConfigPath resolves the config file path.
-// Returns override if non-empty, otherwise returns ConfigDir()/gofind.json.
-func XDGConfigPath(override string) string {
-	if override != "" {
-		return override
-	}
-	return filepath.Join(paths.ConfigDir(), "gofind.json")
-}
-
-// ReadFileOrDefault reads config from path, returning Default() if the file
-// does not exist. Used in Before hooks where a missing config is acceptable.
-func ReadFileOrDefault(path string) (*Config, error) {
-	cfg, err := ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return Default(), nil
-		}
-		return nil, err
-	}
-	return cfg, nil
 }
 
 func Read(r io.Reader) (*Config, error) {
@@ -102,20 +70,4 @@ func ReadFile(path string) (*Config, error) {
 	}
 
 	return Read(bytes.NewBuffer(file))
-}
-
-func Write(w io.Writer, cfg *Config) error {
-	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(cfg)
-}
-
-func WriteFile(path string, cfg *Config) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = file.Close() }()
-
-	return Write(file, cfg)
 }

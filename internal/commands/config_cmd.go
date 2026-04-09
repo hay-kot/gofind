@@ -5,24 +5,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/urfave/cli/v3"
-
-	"github.com/hay-kot/gofind/internal/config"
+	"github.com/hay-kot/gofind/internal/paths"
 	"github.com/hay-kot/gofind/internal/ui"
+	"github.com/urfave/cli/v3"
 )
 
-// ConfigCmd implements the config subcommand.
 type ConfigCmd struct {
 	flags *Flags
 }
 
-// NewConfigCmd creates a new config command.
 func NewConfigCmd(flags *Flags) *ConfigCmd {
 	return &ConfigCmd{flags: flags}
 }
 
-// Register adds the config command to the application.
-func (cmd *ConfigCmd) Register(app *cli.Command) *cli.Command {
+func (cmd *ConfigCmd) Register(app *cli.Command) {
 	app.Commands = append(app.Commands, &cli.Command{
 		Name:    "config",
 		Aliases: []string{"c"},
@@ -41,12 +37,11 @@ func (cmd *ConfigCmd) Register(app *cli.Command) *cli.Command {
 			},
 		},
 	})
-	return app
 }
 
 func (cmd *ConfigCmd) list(ctx context.Context, c *cli.Command) error {
-	p := config.XDGConfigPath(cmd.flags.ConfigFile)
-	cfg, err := config.ReadFile(p)
+	p := paths.ConfigPath(cmd.flags.ConfigFile)
+	cfg, err := readConfig(cmd.flags.ConfigFile)
 	if err != nil {
 		return err
 	}

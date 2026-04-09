@@ -8,38 +8,27 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v3"
 
-	"github.com/hay-kot/gofind/internal/config"
 	"github.com/hay-kot/gofind/internal/gofind"
 )
 
-// CacheCmd implements the cache subcommand.
 type CacheCmd struct {
 	flags *Flags
 }
 
-// NewCacheCmd creates a new cache command.
 func NewCacheCmd(flags *Flags) *CacheCmd {
 	return &CacheCmd{flags: flags}
 }
 
-// Register adds the cache command to the application.
-func (cmd *CacheCmd) Register(app *cli.Command) *cli.Command {
+func (cmd *CacheCmd) Register(app *cli.Command) {
 	app.Commands = append(app.Commands, &cli.Command{
-		Name:  "cache",
-		Usage: "cache all config entries",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "entry",
-				Usage: "specific entry to re-cache",
-			},
-		},
+		Name:   "cache",
+		Usage:  "cache all config entries",
 		Action: cmd.run,
 	})
-	return app
 }
 
 func (cmd *CacheCmd) run(ctx context.Context, c *cli.Command) error {
-	cfg, err := config.ReadFile(config.XDGConfigPath(cmd.flags.ConfigFile))
+	cfg, err := readConfig(cmd.flags.ConfigFile)
 	if err != nil {
 		return err
 	}
