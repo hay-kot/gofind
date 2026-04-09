@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime/debug"
+	"runtime/pprof"
 	"syscall"
 
 	"github.com/rs/zerolog"
@@ -91,15 +92,20 @@ func run() int {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	var (
-		logLevel string
-		noColor  bool
-		logFile  string
+		logLevel   string
+		noColor    bool
+		logFile    string
+		profileOut string
 	)
 	flags := &commands.Flags{}
 
 	// logCloser is assigned by the Before hook once setupLogger succeeds.
 	logCloser := func() {}
 	defer func() { logCloser() }()
+
+	// profileCloser stops CPU profiling if --profile was requested.
+	profileCloser := func() {}
+	defer func() { profileCloser() }()
 
 	app := &cli.Command{
 		Name:                  "gofind",
@@ -134,6 +140,12 @@ func run() int {
 				Aliases:     []string{"c"},
 				Destination: &flags.ConfigFile,
 			},
+			&cli.StringFlag{
+				Name:        "profile",
+				Usage:       "write CPU profile to file",
+				Sources:     cli.EnvVars("GOFIND_PROFILE"),
+				Destination: &profileOut,
+			},
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
 			closer, err := setupLogger(logLevel, logFile, noColor)
@@ -141,6 +153,22 @@ func run() int {
 				return ctx, err
 			}
 			logCloser = closer
+
+			if profileOut != "" {
+				f, err := os.Create(profileOut)
+				if err != nil {
+					return ctx, fmt.Errorf("could not create profile file: %w", err)
+				}
+				if err := pprof.StartCPUProfile(f); err != nil {
+					_ = f.Close()
+					return ctx, fmt.Errorf("could not start CPU profile: %w", err)
+				}
+				profileCloser = func() {
+					pprof.StopCPUProfile()
+					_ = f.Close()
+				}
+			}
+
 			return ctx, nil
 		},
 	}
