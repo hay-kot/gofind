@@ -21,15 +21,25 @@ func NewFindCmd(flags *Flags) *FindCmd {
 }
 
 func (cmd *FindCmd) Register(app *cli.Command) {
+	var noCache bool
 	app.Commands = append(app.Commands, &cli.Command{
 		Name:      "find",
 		Usage:     "run interactive finder for entry",
 		UsageText: "gofind find [config-entry string] e.g. `gofind find repos`",
-		Action:    cmd.run,
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "no-cache",
+				Usage:       "skip cache and scan directories directly",
+				Destination: &noCache,
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return cmd.run(ctx, c, noCache)
+		},
 	})
 }
 
-func (cmd *FindCmd) run(ctx context.Context, c *cli.Command) error {
+func (cmd *FindCmd) run(ctx context.Context, c *cli.Command, noCache bool) error {
 	cfg, err := readConfig(cmd.flags.ConfigFile)
 	if err != nil {
 		return err
@@ -37,7 +47,7 @@ func (cmd *FindCmd) run(ctx context.Context, c *cli.Command) error {
 
 	ui.Init(cfg.Theme)
 
-	finder := gofind.GoFind{Conf: cfg}
+	finder := gofind.GoFind{Conf: cfg, NoCache: noCache}
 	entry := c.Args().Get(0)
 
 	matches, err := finder.Run(entry)
