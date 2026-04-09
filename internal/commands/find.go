@@ -52,6 +52,8 @@ func (cmd *FindCmd) run(ctx context.Context, c *cli.Command) error {
 	}
 
 	result, err := tui.FuzzyFinder(matches)
-	fmt.Println(result)
+	if result != "" {
+		fmt.Println(result)
+	}
 	return err
 }
