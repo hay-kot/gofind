@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"os"
+
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hay-kot/gofind/internal/config"
 )
@@ -28,11 +30,16 @@ func Init(theme config.Theme) {
 	ColorPrimaryText = lipgloss.Color(theme.PrimaryText)
 	ColorSelectionBackground = lipgloss.Color(theme.SelectionBackground)
 
-	boldStyle := lipgloss.NewStyle().Bold(true).Foreground(ColorPrimaryText)
-	subtleStyle := lipgloss.NewStyle().Foreground(ColorSecondaryText)
-	accentRedStyle := lipgloss.NewStyle().Foreground(ColorSelectedIndicator)
-	accentBlueStyle := lipgloss.NewStyle().Foreground(ColorPrompt)
-	highlightRowStyle := lipgloss.NewStyle().Background(ColorSelectionBackground)
+	// Use stderr-based renderer so color detection works even when stdout is
+	// piped (e.g. when invoked via shell substitution like $(repos)).
+	// The TUI also outputs to stderr, so this matches its environment.
+	r := lipgloss.NewRenderer(os.Stderr)
+
+	boldStyle := r.NewStyle().Bold(true).Foreground(ColorPrimaryText)
+	subtleStyle := r.NewStyle().Foreground(ColorSecondaryText)
+	accentRedStyle := r.NewStyle().Foreground(ColorSelectedIndicator)
+	accentBlueStyle := r.NewStyle().Foreground(ColorPrompt)
+	highlightRowStyle := r.NewStyle().Background(ColorSelectionBackground)
 
 	Bold = func(s string) string { return boldStyle.Render(s) }
 	Subtle = func(s string) string { return subtleStyle.Render(s) }
