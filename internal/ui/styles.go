@@ -2,7 +2,7 @@ package ui
 
 import (
 	"github.com/charmbracelet/lipgloss"
-	"github.com/hay-kot/gofind/internal/core/config"
+	"github.com/hay-kot/gofind/internal/config"
 )
 
 var (

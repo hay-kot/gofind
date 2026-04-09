@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/hay-kot/gofind/internal/core/config"
+	"github.com/hay-kot/gofind/internal/config"
 	"github.com/rs/zerolog/log"
 )
 
@@ -26,6 +26,7 @@ func ParsePath(p string) (string, error) {
 
 type GoFind struct {
 	Verbose bool
+	NoCache bool
 	Conf    *config.Config
 }
 
@@ -51,6 +52,10 @@ func (gf *GoFind) Run(entry string) ([]Match, error) {
 	if entry == "" {
 		log.Debug().Msg("no arguments provided using default")
 		cmd = gf.Conf.Default
+	}
+
+	if gf.NoCache {
+		return gf.SearchFor(gf.Conf.Commands[cmd]), nil
 	}
 
 	// Preload cache if exists

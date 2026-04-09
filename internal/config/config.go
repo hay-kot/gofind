@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
+
+	"github.com/hay-kot/gofind/internal/paths"
 )
 
 type Theme struct {
@@ -21,7 +24,7 @@ type Config struct {
 	CacheDir     string                 `json:"cache"`
 	Ignore       []string               `json:"ignore"`
 	MaxRecursion int                    `json:"max_recursion"`
-	Theme        Theme                  `json:"theme,omitzero"`
+	Theme        Theme                  `json:"theme,omitempty"`
 }
 
 func DefaultTheme() Theme {
@@ -38,20 +41,10 @@ func Default() *Config {
 	return &Config{
 		Default:      "",
 		Commands:     make(map[string]SearchEntry),
-		CacheDir:     XDGCachePath(),
+		CacheDir:     filepath.Join(paths.DataDir(), "cache"),
 		Ignore:       []string{},
 		MaxRecursion: 10,
 		Theme:        DefaultTheme(),
-	}
-}
-
-// IgnorePatterns are common ignore folders/file patterns that
-// will always be excluded.
-func IgnorePatterns() []string {
-	return []string{
-		"node_modules",
-		".venv",
-		"venv",
 	}
 }
 
@@ -77,20 +70,4 @@ func ReadFile(path string) (*Config, error) {
 	}
 
 	return Read(bytes.NewBuffer(file))
-}
-
-func Write(w io.Writer, cfg *Config) error {
-	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(cfg)
-}
-
-func WriteFile(path string, cfg *Config) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = file.Close() }()
-
-	return Write(file, cfg)
 }

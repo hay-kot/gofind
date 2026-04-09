@@ -31,7 +31,7 @@ linters:
       rules:
         main:
           deny:
-            - pkg: io/util
+            - pkg: io/ioutil
               desc: |
                 Deprecated: As of Go 1.16, the same functionality is now provided by
                 package io or package os, and those implementations should be
@@ -71,3 +71,12 @@ issues:
 formatters:
   enable:
     - gofumpt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+  settings:
+    gofumpt:
+      extra-rules: false
